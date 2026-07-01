@@ -1688,7 +1688,7 @@ async function pushCardToTavern(id) {
       fd.append("first_mes", c.first_mes || "");
       fd.append("mes_example", c.mesExample || "");
       fd.append("creator_notes", c.note || "");
-      if (c.tags && c.tags.length > 0) fd.append("tags", c.tags.join(','));
+      if (c.tags && c.tags.length > 0) fd.append("tags", JSON.stringify(c.tags));
       await fetch(tavernProxy + '/api/characters/edit', { method: 'POST', body: fd });
       
       showToast(`推送新角成功! [${c.name}]`);
@@ -1716,7 +1716,7 @@ async function pushCardToTavern(id) {
       // 处理标签合并
       const finalTags = (c.tags && c.tags.length > 0) ? c.tags : existChar.tags;
       if (finalTags && finalTags.length > 0) {
-         fd.append("tags", finalTags.join(','));
+         fd.append("tags", JSON.stringify(finalTags));
       }
 
       const updateResp = await fetch(tavernProxy + '/api/characters/edit', {
@@ -1776,28 +1776,44 @@ async function pullFromTavern() {
          if(!avatarResp.ok) throw new Error("图片未找到");
          
          const avatarBlob = await avatarResp.blob();
-         const reader = new FileReader();
-         const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(avatarBlob); });
          
-         // 兼容酒馆新老版本的嵌套数据结构
+         // ---- 新增：强制解包下载图片的 EXIF 原始设定 ----
+         const buffer = await avatarBlob.arrayBuffer();
+         let meta = {};
+         const charaStr = extractExifMetadata(buffer, 'chara');
+         if(charaStr) {
+             try {
+                 const decoded = atob(charaStr); 
+                 const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
+                 meta = parseTavernJson(textData) || {};
+             } catch (e) {
+                 meta = parseTavernJson(charaStr) || {};
+             }
+         }
+
+         const reader = new FileReader();
+         const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(new Blob([buffer])); });
+         
+         // 融合 EXIF 数据与接口摘要，EXIF 优先级最高
          const charData = ci.data || ci; 
+         const finalDesc = meta.description || charData.description || ci.description || "";
          const newCard = {
             id: 'c_' + uuid(),
             hash: hashCandidate,
-            name: ci.name,
-            description: charData.description || ci.description || "",
-            personality: charData.personality || ci.personality || "",
-            first_mes: charData.first_mes || ci.first_mes || "",
-            mesExample: charData.mes_example || ci.mes_example || "",
-            note: charData.creator_notes || charData.note || ci.creator_notes || "",
+            name: meta.name || ci.name,
+            description: finalDesc,
+            personality: meta.personality || charData.personality || ci.personality || "",
+            first_mes: meta.first_mes || charData.first_mes || ci.first_mes || "",
+            mesExample: meta.mes_example || charData.mes_example || ci.mes_example || "",
+            note: meta.creator_notes || charData.creator_notes || charData.note || ci.creator_notes || "",
             originalDataUrl: base64Str,
             thumb: await genThumb(base64Str, 400),
             fileType: 'image/png',
             fileSize: avatarBlob.size,
             importedAt: Date.now(),
             section: S.sections[0],
-            tags: ci.tags || charData.tags || [],
-            charCount: (charData.description || ci.description || "").length,
+            tags: meta.tags || ci.tags || charData.tags || [],
+            charCount: finalDesc.length,
             groupId: ''
          };
          await dbP('cards', newCard);
@@ -2573,26 +2589,44 @@ async function syncWithTavern() {
          const avatarResp = await fetch(tavernProxy + '/characters/' + ci.avatar);
          if(!avatarResp.ok) throw new Error();
          const avatarBlob = await avatarResp.blob();
-         const reader = new FileReader();
-         const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(avatarBlob); });
          
+         // ---- 新增：强制解包下载图片的 EXIF 原始设定 ----
+         const buffer = await avatarBlob.arrayBuffer();
+         let meta = {};
+         const charaStr = extractExifMetadata(buffer, 'chara');
+         if(charaStr) {
+             try {
+                 const decoded = atob(charaStr); 
+                 const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
+                 meta = parseTavernJson(textData) || {};
+             } catch (e) {
+                 meta = parseTavernJson(charaStr) || {};
+             }
+         }
+
+         const reader = new FileReader();
+         const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(new Blob([buffer])); });
+         
+         // 融合 EXIF 数据与接口摘要，EXIF 优先级最高
          const charData = ci.data || ci;
+         const finalDesc = meta.description || charData.description || ci.description || "";
+         
          const newCard = {
-            id: 'c_' + uuid(), hash: hashCandidate, name: ci.name, 
-            description: charData.description || ci.description || "",
-            personality: charData.personality || ci.personality || "",
-            first_mes: charData.first_mes || ci.first_mes || "",
-            mesExample: charData.mes_example || ci.mes_example || "",
-            note: charData.creator_notes || charData.note || ci.creator_notes || "",
+            id: 'c_' + uuid(), hash: hashCandidate, name: meta.name || ci.name, 
+            description: finalDesc,
+            personality: meta.personality || charData.personality || ci.personality || "",
+            first_mes: meta.first_mes || charData.first_mes || ci.first_mes || "",
+            mesExample: meta.mes_example || charData.mes_example || ci.mes_example || "",
+            note: meta.creator_notes || charData.creator_notes || charData.note || ci.creator_notes || "",
             originalDataUrl: base64Str, thumb: await genThumb(base64Str, 400),
             fileType: 'image/png', fileSize: avatarBlob.size, importedAt: Date.now(),
-            section: S.sections[0], tags: ci.tags || charData.tags || [], 
-            charCount: (charData.description || ci.description || "").length, groupId: ''
+            section: S.sections[0], tags: meta.tags || ci.tags || charData.tags || [], 
+            charCount: finalDesc.length, groupId: ''
          };
          await dbP('cards', newCard);
          pullOk++;
        } catch(ex) { }
-    }
+	   }
 
     await loadCardsLightweight(); 
     renderAll();
