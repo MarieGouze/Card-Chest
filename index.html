@@ -545,12 +545,14 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
       const filtered = list.filter(c => {
         return queries.every(token => {
           const lowerToken = token.toLowerCase();
-          if (lowerToken.startsWith('tag:')) { const tName = lowerToken.slice(4); return [...(c.tags || []), ...(c.subtags || [])].some(t => t.toLowerCase().includes(tName)); }
+          if (lowerToken.startsWith('tag:')) { const tName = lowerToken.slice(4); return [...(c.tags || []), ...(c.subtags || [])].some(t => (t || '').toLowerCase().includes(tName)); }
           if (lowerToken.startsWith('char>')) return (c.charCount || 0) > parseInt(lowerToken.slice(5)) || 0;
           if (lowerToken.startsWith('char<')) return (c.charCount || 0) < parseInt(lowerToken.slice(5)) || 9999999;
-          if (scopes.has('name') && c.name.toLowerCase().includes(lowerToken)) return true;
+          
+          // 确保所有参与搜索的字段都有 fallback，避免 toLowerCase() 在 undefined 上报错
+          if (scopes.has('name') && (c.name || '').toLowerCase().includes(lowerToken)) return true;
           if (scopes.has('desc') && (c.description || '').toLowerCase().includes(lowerToken)) return true;
-          if (scopes.has('tags') && [...(c.tags || []), ...(c.subtags || [])].some(t => t.toLowerCase().includes(lowerToken))) return true;
+          if (scopes.has('tags') && [...(c.tags || []), ...(c.subtags || [])].some(t => (t || '').toLowerCase().includes(lowerToken))) return true;
           if (scopes.has('note') && (c.note || '').toLowerCase().includes(lowerToken)) return true;
           return false;
         });
@@ -790,8 +792,11 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
         <div style="font-size:11px; margin-top:8px; display:flex; align-items:center; gap:6px;">
           <input type="checkbox" id="wdAutoSync" onchange="toggleAutoSync(this.checked)"> <label for="wdAutoSync">开启后台静默同步</label>
         </div>
-        <div class="act-row"><button class="actbtn" onclick="saveWebdavConfig()">保存配置</button></div>
-        <div class="act-row"><button class="actbtn pri" onclick="syncPush()">↑ 推送到云端</button><button class="actbtn pri" onclick="syncPull()">↓ 从云端拉取</button></div>
+        <div class="act-row">
+  <button class="actbtn" onclick="saveWebdavConfig()">保存配置</button>
+  <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="testWebdav()">测试连接</button>
+      </div>
+		<div class="act-row"><button class="actbtn pri" onclick="syncPush()">↑ 推送到云端</button><button class="actbtn pri" onclick="syncPull()">↓ 从云端拉取</button></div>
         <div id="lastSyncTime" style="font-size:10px;color:var(--ink3);margin-top:7px">上次同步: 从未</div>
         <p style="margin-top:5px;font-size:10px;color:var(--ink3)">纯增量同步，极速且节省内存。自动建文件夹并保存为JSON。需服务端支持CORS。</p>
       </div>
@@ -1026,14 +1031,29 @@ function dataUrlToBlobUrl(dataurl) {
   } catch (e) { return null; }
 }
 function lighten(full) {
+  // 核心防御：强制转换 tags 类型。如果数据库里混入了字符串或对象，强转为数组，防止 forEach 崩溃
+  const safeTags = Array.isArray(full.tags) ? full.tags : (typeof full.tags === 'string' ? [full.tags] : []);
+  const safeSubtags = Array.isArray(full.subtags) ? full.subtags : (typeof full.subtags === 'string' ? [full.subtags] : []);
+  
   return {
-    id: full.id, name: full.name, section: full.section, importedAt: full.importedAt,
-    fileSize: full.fileSize, fileType: full.fileType, description: full.description,
-    tags: full.tags, subtags: full.subtags, charCount: full.charCount,
-    note: full.note, favorite: full.favorite, groupId: full.groupId,
-    dialogEntries: (full.dialogEntries || []).map(d => d.slice(0, 2000)), // 仅保留截断
-    worldBookEntries: (full.worldBookEntries || []).map(we => ({keys: we.keys, length: we.content?.length||0})),
-    presetEntries: (full.presetEntries || []).map(pe => ({name: pe.name, length: pe.content?.length||0})),
+    id: full.id, 
+    name: full.name || '未知', 
+    section: full.section, 
+    importedAt: full.importedAt,
+    fileSize: full.fileSize, 
+    fileType: full.fileType, 
+    description: full.description,
+    tags: safeTags,
+    subtags: safeSubtags,
+    charCount: full.charCount || 0,
+    note: full.note, 
+    favorite: full.favorite, 
+    groupId: full.groupId,
+    // 增加判空和字符串转换，防止由于空数组项导致的 slice 崩溃
+    dialogEntries: Array.isArray(full.dialogEntries) ? full.dialogEntries.map(d => d ? String(d).slice(0, 2000) : '') : [],
+    // 增加可选链保护，防止读取 null 属性
+    worldBookEntries: Array.isArray(full.worldBookEntries) ? full.worldBookEntries.map(we => ({keys: we?.keys || '无标题', length: we?.content?.length || 0})) : [],
+    presetEntries: Array.isArray(full.presetEntries) ? full.presetEntries.map(pe => ({name: pe?.name || '无名称', length: pe?.content?.length || 0})) : [],
     _thumbBlobUrl: full._thumbBlobUrl || dataUrlToBlobUrl(full.thumb || full.coverDataUrl)
   };
 }
@@ -1773,7 +1793,26 @@ async function pullFromTavern() {
 // 导入与解析引擎 (EXIF, JSON, 差异对比)
 // ============================================================
 const CHUNK_TEXT = 1952807028;
-let pendFiles = []; 
+let pendFiles = [];
+function openImport() {
+  if (typeof pendFiles !== 'undefined') pendFiles = [];
+  document.getElementById('progBox').style.display = 'none';
+  document.getElementById('dupList').innerHTML = '';
+  document.getElementById('fileInput').value = '';
+  if (typeof refreshPending === 'function') refreshPending();
+  
+  const sel = document.getElementById('importSection');
+  if (sel && sel.options.length === 0) {
+    S.sections.forEach(s => { 
+      const o = document.createElement('option'); 
+      o.value = s; 
+      o.textContent = s; 
+      sel.appendChild(o); 
+    });
+  }
+  if (sel) sel.value = S.activeSection;
+  openModal('importModal');
+}
 function triggerFile() { document.getElementById('fileInput').click(); }
 document.getElementById('fileInput').addEventListener('change', e => { if (e.target.files.length) handleFilesDrop(Array.from(e.target.files)); });
 document.getElementById('dropZone').addEventListener('dragover', e => { e.preventDefault(); e.currentTarget.classList.add('drag'); globalDropNode.classList.add('drag'); });
@@ -1819,13 +1858,23 @@ async function startImport() {
     try {
       const ext = file.name.split('.').pop().toLowerCase();
       let meta = null, base64 = null, textData = null;
-      
-      const buffer = await readFileBuf(file);
+
+      // [修复] 补全 ArrayBuffer 读取
+      const buffer = await file.arrayBuffer(); 
+
       if (ext === 'png') {
         const charaStr = extractExifMetadata(buffer, 'chara');
         if(charaStr) {
-           const decoded = atob(charaStr); textData = new TextDecoder().decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
-           meta = parseTavernJson(textData);
+           try {
+               // 尝试标准的 Base64 解析
+               const decoded = atob(charaStr); 
+               textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
+               meta = parseTavernJson(textData);
+           } catch (e) {
+               // 兼容免 Base64 加密，直接写入原始 JSON 的改版卡片
+               meta = parseTavernJson(charaStr);
+               textData = charaStr;
+           }
         }
         base64 = bufToBase64(buffer, 'image/png');
       } else if (ext === 'webp') {
@@ -1842,13 +1891,20 @@ async function startImport() {
       const textForHash = (meta.name||'') + (meta.description||'') + (meta.mes_example||'');
       const hash = textData ? await asyncHash(textForHash) : (await asyncHash(base64.slice(0, 50000)));
       
-      let cCount = (meta.name?meta.name.length:0) + (meta.description?meta.description.length:0) + (meta.personality?meta.personality.length:0) + (meta.mes_example?meta.mes_example.length:0);
+      let cCount = (meta.name ? meta.name.length : 0) + 
+             (meta.description ? meta.description.length : 0) + 
+             (meta.personality ? meta.personality.length : 0) + 
+             (meta.mes_example ? meta.mes_example.length : 0);
       
       const thumb = base64 ? await genThumb(base64, 400) : null;
       
       const card = {
         id: 'c_' + uuid(), hash,
-        name: meta.name || file.name, description: meta.description || '', note: '', fileType: file.type || ext,
+        name: meta.name || file.name,
+		description: (meta.description || '') + 
+               (meta.personality ? '\n\n【性格】\n' + meta.personality : '') + 
+               (meta.scenario ? '\n\n【场景】\n' + meta.scenario : ''),
+        note: '', fileType: file.type || ext,
         fileSize: file.size, importedAt: Date.now(), section: targetSec, favorite: false, groupId: '',
         tags: meta.tags || (!meta.name?['无数据']:''), subtags: [], charCount: cCount,
         originalDataUrl: base64, thumb: thumb, mesExample: meta.mes_example || ''
@@ -1898,17 +1954,36 @@ async function acceptDup(cid, btn, act, oldId) {
   loadCardsLightweight().then(()=>renderGrid());
 }
 
-function parseTavernJson(str) { try{return JSON.parse(str);} catch(e){return null;} }
+function parseTavernJson(str) { 
+  try { 
+    let parsed = JSON.parse(str); 
+    // 核心修复：处理新型酒馆卡片数据包裹在 .data 属性下导致全白的问题
+    if (parsed && parsed.data) {
+      return { ...parsed, ...parsed.data };
+    }
+    return parsed;
+  } catch(e) { 
+    return null; 
+  } 
+}
+
 function extractExifMetadata(buffer, key) {
   const vArr = new DataView(buffer); let pos = 8;
-  while(pos < buffer.byteLength) {
-    const len = vArr.getUint32(pos); const type = vArr.getUint32(pos+4);
-    if(type === CHUNK_TEXT) {
+  const targetType = 'tEXt'; // 脱离错误的常量依赖，直接匹配标准头
+  
+  while(pos < buffer.byteLength - 12) {
+    const len = vArr.getUint32(pos); 
+    // 强制转换为文本匹配，修复不同浏览器内核的十六进制读取大小端差异
+    const typeStr = String.fromCharCode(vArr.getUint8(pos+4), vArr.getUint8(pos+5), vArr.getUint8(pos+6), vArr.getUint8(pos+7));
+    
+    if(typeStr === targetType) {
       let kwd = ''; let k = pos + 8;
-      while(vArr.getUint8(k)!==0 && k<pos+8+len) { kwd+=String.fromCharCode(vArr.getUint8(k)); k++; }
-      if(kwd === key) {
-        k++; let str = ''; while(k<pos+8+len) { str+=String.fromCharCode(vArr.getUint8(k)); k++; }
-        return str;
+      while(vArr.getUint8(k)!==0 && k < pos+8+len) { kwd += String.fromCharCode(vArr.getUint8(k)); k++; }
+      if(kwd.toLowerCase() === key.toLowerCase()) {
+        k++; // 跳过分隔符
+        const dataBytes = new Uint8Array(buffer, k, pos + 8 + len - k);
+        // 使用 TextDecoder 解决读取过长导致系统栈溢出并支持宽字符
+        return new TextDecoder('latin1').decode(dataBytes);
       }
     }
     pos += len + 12;
@@ -2203,6 +2278,22 @@ function saveWebdavConfig() {
   webdavConfig.pass = document.getElementById('wdPass').value;
   dbP('meta', {key: 'webdavConfig', value: webdavConfig}); showToast('云参数保存');
 }
+async function testWebdav() {
+  if (!webdavConfig.url) return showToast('请先填写 WebDAV URL');
+  showBusy('测试中', '正在连接 WebDAV...', 0.5);
+  try {
+    const res = await wdFetch('', { method: 'PROPFIND', headers: { 'Depth': '0' } });
+    if (res.ok || res.status === 207) {
+      showToast('连接成功！🎉');
+    } else {
+      showToast('连接失败，状态码: ' + res.status);
+    }
+  } catch(e) {
+    showToast('网络或跨域错误: ' + e.message);
+  } finally {
+    hideBusy();
+  }
+}
 function toggleAutoSync(val) { webdavConfig.autoSync = val; saveWebdavConfig(); }
 async function wdFetch(path, opts={}) {
   const b64 = btoa(webdavConfig.user + ':' + webdavConfig.pass);
@@ -2255,8 +2346,17 @@ function fmtN(n) { return n>=10000 ? (n/10000).toFixed(1)+'w' : (n>=1000 ? (n/10
 function uuid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
 function openModal(id) { document.getElementById(id).classList.add('show'); document.body.style.overflow = 'hidden'; }
-function closeModal(id) { document.getElementById(id).classList.remove('show'); document.body.style.overflow = ''; 
-  if (id === 'detailModal') _currentDetailId = null;
+
+function closeModal(id) { 
+  document.getElementById(id).classList.remove('show'); 
+  document.body.style.overflow = ''; 
+  if (id === 'detailModal') {
+    _currentDetailId = null;
+    // 触发大屏双栏检测，释放被锁死的 DOM
+    if (typeof checkSplitPaneMode === 'function') {
+      checkSplitPaneMode();
+    }
+  }
 }
 
 document.querySelectorAll('.modal-box').forEach(b => { b.addEventListener('click', e => e.stopPropagation()); });
