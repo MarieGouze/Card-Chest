@@ -562,28 +562,6 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   };
 </script>
 
-<script>
-  // Service Worker 离线缓存与 PWA 注册逻辑
-  if ('serviceWorker' in navigator) {
-    const swCode = `
-      const CACHE_NAME = 'kaku-v4-cache';
-      const urlsToCache = [ './', 'index.html' ]; // 简单骨架缓存
-      self.addEventListener('install', event => {
-        event.waitUntil( caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)) );
-      });
-      self.addEventListener('fetch', event => {
-        event.respondWith( caches.match(event.request).then(response => response || fetch(event.request)) );
-      });
-    `;
-    const blob = new Blob([swCode], { type: 'application/javascript' });
-    const swUrl = URL.createObjectURL(blob);
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register(swUrl).then(registration => {
-        console.log('SW registered inline: ', registration.scope);
-      }).catch(err => console.log('SW registration failed: ', err));
-    });
-  }
-</script>
 
 </head>
 <body>
