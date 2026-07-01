@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>卡库 · CARD ARCHIVE</title>
+<title>Marie's Chest</title>
 
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1635,15 +1635,28 @@ async function pushCardToTavern(id) {
 }
 
 // 批量从酒馆拉取
+// 批量从酒馆拉取 (彻底兼容修正版)
 async function pullFromTavern() {
   if(!tavernProxy) return alert("请先配置 Tavern API Proxy!");
   if(!confirm("准备从酒馆全量同步卡片列表(只下载不存在的新卡)，耗时可能较长，确认执行？")) return;
   
-  showBusy('请求酒馆数据', 'Fetching characters...', 0.1);
+  showBusy('请求酒馆数据', '正在通过代理网关直连酒馆...', 0.1);
   try {
-    const resp = await fetch(tavernProxy + '/api/characters');
-    if(!resp.ok) throw new Error("获取列表失败");
-    const list = await resp.json();
+    // 1. 修正路径：SillyTavern 获取所有角色的真实接口是 POST /api/characters/all
+    let resp = await fetch(tavernProxy + '/api/characters/all', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({})
+    });
+    
+    // Fallback: 防备酒馆部分版本转为 GET 请求模式
+    if(!resp.ok) resp = await fetch(tavernProxy + '/api/characters/all');
+    if(!resp.ok) throw new Error(`服务端返回 ${resp.status}，无法获取列表。`);
+    
+    let list = await resp.json();
+    
+    // 兼容酒馆可能返回不同的 JSON 结构 (部分版本存在 .default 下)
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
     
     let imported = 0; let total = list.length;
     for(let i=0; i<total; i++) {
@@ -1657,10 +1670,11 @@ async function pullFromTavern() {
        document.getElementById('busyBar').style.width = ((i/total)*100)+'%';
        document.getElementById('busySub').textContent = `正在拉取：${ci.name}`;
        
-       // 通过 GET /api/characters/${ci.avatar} 获取图像资源
-       // 转 base64 存入卡库
+       // 2. 修正图片路径：酒馆的角色源卡图片实际上存放在 /characters/ 静态目录下
        try {
-         const avatarResp = await fetch(tavernProxy + '/api/characters/' + ci.avatar);
+         const avatarResp = await fetch(tavernProxy + '/characters/' + ci.avatar);
+         if(!avatarResp.ok) throw new Error("图片未找到");
+         
          const avatarBlob = await avatarResp.blob();
          const reader = new FileReader();
          const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(avatarBlob); });
@@ -1682,7 +1696,7 @@ async function pullFromTavern() {
          };
          await dbP('cards', newCard);
          imported++;
-       } catch(e) { console.warn("Avatar skip:", ci.avatar); }
+       } catch(e) { console.warn("跳过无图像的卡片:", ci.avatar); }
     }
     
     await loadCardsLightweight(); renderAll();
