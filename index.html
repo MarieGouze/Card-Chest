@@ -1678,7 +1678,7 @@ async function pushCardToTavern(id) {
       // 解析酒馆返回的内部文件名，并强制触发一次热更新写入最新文本，防止酒馆吞卡或解析失败
       let importResult = {};
       try { importResult = await importResp.json(); } catch(e) {}
-      let newAvatar = importResult.avatar || importResult.file || fn;
+      let newAvatar = importResult.file_name || importResult.avatar || importResult.file || fn;
       
       const fd = new FormData();
       fd.append("avatar", newAvatar);
@@ -2478,7 +2478,7 @@ async function execBatchPushToTavern(idList) {
            
            let importResult = {};
            try { importResult = await importResp.json(); } catch(e) {}
-           let newAvatar = importResult.avatar || importResult.file || fn;
+           let newAvatar = importResult.file_name || importResult.avatar || importResult.file || fn;
 
            const fd = new FormData();
            fd.append("avatar", newAvatar);
