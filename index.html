@@ -1678,8 +1678,17 @@ async function pushCardToTavern(id) {
       // 解析酒馆返回的内部文件名，并强制触发一次热更新写入最新文本，防止酒馆吞卡或解析失败
       let importResult = {};
       try { importResult = await importResp.json(); } catch(e) {}
-      let newAvatar = importResult.file_name || importResult.avatar || importResult.file || fn;
+      let newAvatar = importResult.file_name || importResult.avatar || importResult.file;
       
+      // 🌟 核心修复：如果酒馆没有返回预期字段，直接重新拉取一次列表，精准获取真实的物理文件名
+      if (!newAvatar) {
+          let verifyResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+          let verifyList = await verifyResp.json();
+          if (!Array.isArray(verifyList)) verifyList = verifyList.default || Object.values(verifyList);
+          const createdChar = verifyList.find(card => card.name === c.name);
+          newAvatar = createdChar ? createdChar.avatar : fn;
+      }
+	  
       const fd = new FormData();
       fd.append("avatar", newAvatar);
       fd.append("ch_name", c.name || "");
@@ -2476,9 +2485,18 @@ async function execBatchPushToTavern(idList) {
            rawForm.append('avatar', blob, fn);
            const importResp = await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
            
-           let importResult = {};
+let importResult = {};
            try { importResult = await importResp.json(); } catch(e) {}
-           let newAvatar = importResult.file_name || importResult.avatar || importResult.file || fn;
+           let newAvatar = importResult.file_name || importResult.avatar || importResult.file;
+
+           // 🌟 核心修复：批量模式下同样进行真实文件名二次校验
+           if (!newAvatar) {
+               let verifyResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+               let verifyList = await verifyResp.json();
+               if (!Array.isArray(verifyList)) verifyList = verifyList.default || Object.values(verifyList);
+               const createdChar = verifyList.find(card => card.name === c.name);
+               newAvatar = createdChar ? createdChar.avatar : fn;
+           }
 
            const fd = new FormData();
            fd.append("avatar", newAvatar);
