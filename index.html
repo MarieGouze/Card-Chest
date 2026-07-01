@@ -676,6 +676,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   <button onclick="batchFav()">收藏</button>
   <button onclick="openBatchMove()">移动</button>
   <button onclick="batchExport()">打包导出</button>
+  <button style="color: #93c5fd; border-color: rgba(59,130,246,0.4);" onclick="batchPushToTavern()">☁️ 推送酒馆</button>
   <button class="bb-del" onclick="batchDelete()">删除</button>
   <button class="bb-exit" onclick="exitSelectMode()">✕</button>
 </div>
@@ -763,6 +764,12 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
         <div class="act-row"><button class="actbtn" onclick="saveTavernConfig()">保存 API 配置</button></div>
         <div class="act-row">
           <button class="actbtn" style="background:#3b82f6; color:#fff; border-color:#3b82f6;" onclick="pullFromTavern()">↓ 从酒馆批量拉取卡片 (Pull)</button>
+        </div>
+        <div class="act-row">
+          <button class="actbtn" style="border-color:#3b82f6; color:#3b82f6;" onclick="pushAllToTavern()">↑ 推送全部卡片至酒馆 (Push All)</button>
+        </div>
+        <div class="act-row">
+          <button class="actbtn" style="background:#10b981; color:#fff; border-color:#10b981; font-size:11px;" onclick="syncWithTavern()">🔄 一键双向同步 (Sync All)</button>
         </div>
         <p style="margin-top:5px;font-size:10px;color:var(--ink3)">通过 Worker 代理自动绕过 CORS 并注入密码。保存后即可在详情页中一键推送热更新！</p>
       </div>
@@ -1609,29 +1616,85 @@ function saveTavernConfig() {
   showToast('Tavern 云端 API 已连接');
 }
 
-// 一键推送至酒馆
+// 一键推送至酒馆 (升级智能版：自动判定纯新卡导入 或 覆盖热更新旧卡)
 async function pushCardToTavern(id) {
   if(!tavernProxy) return alert("请先在设置中配置 Tavern API Proxy!");
-  const c = await dbG('cards', id); if(!c) return;
-  if(!c.originalDataUrl) return showToast('此项目无源文件可推送(仅JSON或无图像)');
 
-  showBusy('正在向酒馆发包', 'Cloud API Pushing...', 0.5);
+  // 读取最新完整的本地卡片数据
+  const c = await dbG('cards', id);
+  if(!c) return;
+  if(!c.originalDataUrl) return showToast('此项目无图像源文件，暂不支持推送！');
+
+  if (!confirm(`准备将 [${c.name}] 推送至酒馆，确认执行？\n\n(系统智能判定：如果酒馆没有该角色则全新导入；如果已有同名角色，您的修改将覆盖它的设定，但「历史聊天记录」将被安全保留)`)) return;
+
+  showBusy('正在向酒馆发送', 'Cloud API Pushing...', 0.3);
+
   try {
-    const rawForm = new FormData();
-    const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
-    const d = new Date(); const fn = `KakuPush_${d.getTime()}.png`;
-    rawForm.append('avatar', blob, fn);
-    
-    // 发送到云端 Proxy /api/characters/import
-    const resp = await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
-    if(resp.ok) {
-       showToast(`推送成功! [${c.name}]`);
+    // 1. 获取酒馆当前的名单判断是否存在
+    let listResp = await fetch(tavernProxy + '/api/characters/all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    // 防御降级
+    if (!listResp.ok) listResp = await fetch(tavernProxy + '/api/characters/all');
+    let list = await listResp.json();
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
+
+    // 2. 寻找酒馆里是否已有同名角色
+    const existChar = list.find(card => card.name === c.name);
+
+    if (!existChar) {
+      // --------- 场景 A：酒馆没有，走全新导入通道 ---------
+      document.getElementById('busySub').textContent = `正在作为纯新卡导入：${c.name}`;
+      const rawForm = new FormData();
+      const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
+      const fn = `Kaku_Push_${Date.now()}.png`; // 生成一个干净的文件名发送
+      rawForm.append('avatar', blob, fn);
+
+      const importResp = await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
+      if(!importResp.ok) throw new Error(await importResp.text());
+      showToast(`推送新角成功! [${c.name}]`);
+
     } else {
-       alert(`推送失败：${resp.status} - ${await resp.text()}`);
+      // --------- 场景 B：酒馆已有，走无损编辑覆盖通道 ---------
+      document.getElementById('busySub').textContent = `发现该角色，正在热更新设定：${c.name}`;
+      const fd = new FormData();
+
+      // 【核心突破】：回传酒馆已有的内部图像文件名，告诉酒馆“就是这只”，这样肯定不会丢聊天记录！
+      fd.append("avatar", existChar.avatar);
+
+      // 将最新文本赋予给服务器。
+      // 为防止卡库遗漏了某些特殊的高级参数，如果卡库里没改过的，优先拿服务器旧数据保底。
+      fd.append("ch_name", c.name || existChar.name || "");
+      fd.append("description", c.description ?? existChar.description ?? "");
+      fd.append("personality", c.personality ?? existChar.personality ?? "");
+      fd.append("first_mes", c.first_mes ?? existChar.first_mes ?? "");
+      fd.append("mes_example", c.mesExample ?? existChar.mes_example ?? "");
+      fd.append("scenario", c.scenario ?? existChar.scenario ?? "");
+      fd.append("creator_notes", c.note ?? existChar.creator_notes ?? "");
+      fd.append("system_prompt", c.system_prompt ?? existChar.system_prompt ?? "");
+      fd.append("post_history_instructions", c.post_history_instructions ?? existChar.post_history_instructions ?? "");
+
+      // 处理标签合并
+      const finalTags = (c.tags && c.tags.length > 0) ? c.tags : existChar.tags;
+      if (finalTags && finalTags.length > 0) {
+         fd.append("tags", finalTags.join(','));
+      }
+
+      const updateResp = await fetch(tavernProxy + '/api/characters/edit', {
+         method: 'POST',
+         body: fd
+      });
+      if (!updateResp.ok) throw new Error(await updateResp.text());
+      showToast(`📝无损更新设定成功！[${c.name}]`);
     }
+
   } catch(e) {
-    alert("网络请求失败：" + e.message);
-  } finally { hideBusy(); }
+    alert("网络通讯或覆盖失败\n错误原因：" + e.message);
+  } finally {
+    hideBusy();
+  }
 }
 
 // 批量从酒馆拉取
@@ -2240,7 +2303,160 @@ function bindEvents() {
 }
 
 window.addEventListener('DOMContentLoaded', init);
+//======================================
+// 批量与全局 Tavern 同步功能引擎
+//======================================
 
+// 内部核心函数：执行数组队列的批量推送
+async function execBatchPushToTavern(idList) {
+  if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
+  if (!confirm(`准备推送 ${idList.length} 张卡片到酒馆，稍后可以在进度条查看状态。\n(系统会自动比对，旧卡安全更新设定，新卡直接导入)\n确定执行？`)) return;
+
+  showBusy('批量推送中', '正在与酒馆建立连接...', 0.05);
+  let success = 0, fail = 0;
+
+  try {
+    let listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) })
+                         .catch(() => fetch(tavernProxy + '/api/characters/all'));
+    let list = await listResp.json();
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
+
+    for (let i = 0; i < idList.length; i++) {
+       document.getElementById('busyBar').style.width = ((i / idList.length) * 100) + '%';
+       const c = await dbG('cards', idList[i]);
+       if (!c || !c.originalDataUrl) { fail++; continue; }
+
+       document.getElementById('busySub').textContent = `正在推送 (${i+1}/${idList.length}): ${c.name}`;
+       const existChar = list.find(card => card.name === c.name);
+
+       try {
+         if (!existChar) {
+           const rawForm = new FormData();
+           const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
+           rawForm.append('avatar', blob, `BatchPush_${Date.now()}_${i}.png`);
+           await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
+         } else {
+           const fd = new FormData();
+           fd.append("avatar", existChar.avatar);
+           fd.append("ch_name", c.name || existChar.name || "");
+           fd.append("description", c.description ?? existChar.description ?? "");
+           fd.append("personality", c.personality ?? existChar.personality ?? "");
+           fd.append("first_mes", c.first_mes ?? existChar.first_mes ?? "");
+           fd.append("mes_example", c.mesExample ?? existChar.mes_example ?? "");
+           fd.append("creator_notes", c.note ?? existChar.creator_notes ?? "");
+           const finalTags = (c.tags && c.tags.length > 0) ? c.tags : existChar.tags;
+           if (finalTags && finalTags.length > 0) fd.append("tags", finalTags.join(','));
+           await fetch(tavernProxy + '/api/characters/edit', { method: 'POST', body: fd });
+         }
+         success++;
+       } catch(e) { fail++; }
+    }
+    alert(`批量推送完成！\n✅ 成功: ${success}\n❌ 跳过无图/失败: ${fail}`);
+  } catch(e) {
+    alert("网络请求失败：" + e.message);
+  } finally {
+    hideBusy(); exitSelectMode();
+  }
+}
+
+// 供底部多选栏调用的【选中项推送】
+function batchPushToTavern() {
+  if (!S.selectedIds.size) return showToast('先勾选卡片！');
+  execBatchPushToTavern(Array.from(S.selectedIds));
+}
+
+// 供右上角设置面板调用的【推全部】
+function pushAllToTavern() {
+  if (!S.cards.length) return showToast('卡库为空！');
+  execBatchPushToTavern(S.cards.map(c => c.id));
+}
+
+// 终极杀器：供右上角调用的【一键双向同步】 (先推送到酒馆，再拉取酒馆的新卡)
+async function syncWithTavern() {
+  if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
+  if (!confirm("准备执行终极一键双向同步：\n1. 将本地修改覆盖式推送至酒馆\n2. 从酒馆抓取本地不存在的新角色\n需等待一段时间，确认开始？")) return;
+
+  showBusy('一键双向同步', '阶段 1/2: 正在推送卡库数据至云端...', 0.05);
+
+  try {
+    let listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    let list = await listResp.json();
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
+
+    // --- 阶段一：全库无情覆盖式推送 ---
+    let pushOk = 0, pushFail = 0;
+    for (let i = 0; i < S.cards.length; i++) {
+       document.getElementById('busyBar').style.width = ((i / S.cards.length) * 50) + '%'; 
+       const c = await dbG('cards', S.cards[i].id);
+       if (!c || !c.originalDataUrl) continue;
+       
+       document.getElementById('busySub').textContent = `1/2 推送中 (${i+1}/${S.cards.length}): ${c.name}`;
+       const existChar = list.find(card => card.name === c.name);
+
+       try {
+         if (!existChar) {
+           const rawForm = new FormData();
+           const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
+           rawForm.append('avatar', blob, `SyncPush_${Date.now()}_${i}.png`);
+           await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
+         } else {
+           const fd = new FormData();
+           fd.append("avatar", existChar.avatar);
+           fd.append("ch_name", c.name||""); fd.append("description", c.description??""); 
+           fd.append("personality", c.personality??""); fd.append("first_mes", c.first_mes??""); 
+           fd.append("mes_example", c.mesExample??""); fd.append("creator_notes", c.note??"");
+           const finalTags = (c.tags && c.tags.length > 0) ? c.tags : existChar.tags;
+           if (finalTags && finalTags.length > 0) fd.append("tags", finalTags.join(','));
+           await fetch(tavernProxy + '/api/characters/edit', { method: 'POST', body: fd });
+         }
+         pushOk++;
+       } catch(e) { pushFail++; }
+    }
+
+    // --- 阶段二：刷新酒馆最新列表，准备拉新卡回库 ---
+    document.getElementById('busySub').textContent = `请求酒馆最新接口...`;
+    listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    list = await listResp.json();
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
+
+    let pullOk = 0;
+    for (let i = 0; i < list.length; i++) {
+       document.getElementById('busyBar').style.width = (50 + (i / list.length) * 50) + '%';
+       const ci = list[i];
+       
+       const hashCandidate = await asyncHash(ci.name + ci.description);
+       const exist = S.cards.find(x => x.name === ci.name || x.hash === hashCandidate);
+       if(exist) continue;
+
+       document.getElementById('busySub').textContent = `2/2 拉取新卡中: ${ci.name}`;
+
+       try {
+         const avatarResp = await fetch(tavernProxy + '/characters/' + ci.avatar);
+         if(!avatarResp.ok) throw new Error();
+         const avatarBlob = await avatarResp.blob();
+         const reader = new FileReader();
+         const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(avatarBlob); });
+         
+         const newCard = {
+            id: 'c_' + uuid(), hash: hashCandidate, name: ci.name, description: ci.description,
+            originalDataUrl: base64Str, thumb: await genThumb(base64Str, 400),
+            fileType: 'image/png', fileSize: avatarBlob.size, importedAt: Date.now(),
+            section: S.sections[0], tags: ci.tags || [], charCount: ci.description ? ci.description.length : 0, groupId: ''
+         };
+         await dbP('cards', newCard);
+         pullOk++;
+       } catch(ex) { }
+    }
+
+    await loadCardsLightweight(); 
+    renderAll();
+    closeModal('settingsModal');
+    alert(`🎉 一键双向同步完成！\n\n📤 本地发往酒馆 (新增/热更): ${pushOk} 张\n📥 酒馆新卡拉取回库: ${pullOk} 张\n(忽略无效卡: ${pushFail})`);
+
+  } catch(err) {
+    alert('双向同步因异常中断: ' + err.message);
+  } finally { hideBusy(); }
+}
 </script>
 </body>
 </html>
