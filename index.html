@@ -1983,51 +1983,99 @@ function saveTavernConfig() {
   showToast('Tavern 云端 API 已连接');
 }
 
-// 一键推送至酒馆 (纯净原生 PNG 导入模式)
+// 一键推送至酒馆 (升级智能版：自动判定纯新卡导入 或 覆盖热更新旧卡)
 async function pushCardToTavern(id) {
-  if(!tavernProxy) return showToast("请先在设置中配置 Tavern API 地址", "error");
+  if(!tavernProxy) return alert("请先在设置中配置 Tavern API Proxy!");
 
+  // 读取最新完整的本地卡片数据
   const c = await dbG('cards', id);
   if(!c) return;
-  if(!c.originalDataUrl) return showToast('此卡片无源图像文件，无法推送！', "error");
+  if(!c.originalDataUrl) return showToast('此项目无图像源文件，暂不支持推送！');
 
-  if (!confirm(`准备将 [${c.name}] 推送到酒馆，确认执行吗？\n\n(注意：此操作将直接上传原生的 PNG 图片源文件。)`)) return;
+  if (!confirm(`准备将 [${c.name}] 推送至酒馆，确认执行？\n\n(系统智能判定：如果酒馆没有该角色则全新导入；如果已有同名角色，您的修改将覆盖它的设定，但「历史聊天记录」将被安全保留)`)) return;
 
-  showBusy('正在向酒馆发送', '正在生成原生图片...', 0.5);
+  showBusy('正在向酒馆发送', 'Cloud API Pushing...', 0.3);
 
   try {
-    // 核心重构：将本地存储的 base64 安全且稳定地还原为原生二进制 Blob (PNG格式)
-    let byteString = atob(c.originalDataUrl.split(',')[1]);
-    let mimeString = c.originalDataUrl.split(',')[0].split(':')[1].split(';')[0];
-    let ab = new ArrayBuffer(byteString.length);
-    let ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-    }
-    let blob = new Blob([ab], {type: mimeString});
-
-    document.getElementById('busySub').textContent = `正在导入到酒馆...`;
-
-    // 构造原生酒馆接收的 FormData 表单格式
-    const rawForm = new FormData();
-    // 过滤掉所有可能导致报错的特殊字符
-    const safeName = c.name.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '');
-    const fileName = `${safeName}_${Date.now()}.${mimeString.includes('webp') ? 'webp' : 'png'}`;
-    rawForm.append('avatar', blob, fileName);
-
-    // 直接调用酒馆的导入接口，抛弃容易报错的多余步骤
-    const importResp = await fetch(tavernProxy + '/api/characters/import', { 
-        method: 'POST', 
-        body: rawForm 
+    let listResp = await fetch(tavernProxy + '/api/characters/all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
     });
+    if (!listResp.ok) listResp = await fetch(tavernProxy + '/api/characters/all');
+    let list = await listResp.json();
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
 
-    if(!importResp.ok) {
-        throw new Error(`服务器返回错误: ${importResp.status}`);
+    const existChar = list.find(card => card.name === c.name);
+    const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
+
+    if (!existChar) {
+      // --------- 场景 A：纯新卡（直接走原生 PNG 导入，去除了画蛇添足的覆盖操作） ---------
+      document.getElementById('busySub').textContent = `正在作为纯新卡导入：${c.name}`;
+      const rawForm = new FormData();
+      const fn = `Kaku_Push_${Date.now()}.png`; 
+      rawForm.append('avatar', blob, fn);
+
+      const importResp = await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
+      if(!importResp.ok) throw new Error(await importResp.text());
+      showToast(`推送新角成功! [${c.name}]`);
+
+    } else {
+      // --------- 场景 B：存在的老角色无损覆盖（包含封面） ---------
+      document.getElementById('busySub').textContent = `发现该角色，正在热更新设定：${c.name}`;
+      
+      const buffer = await blob.arrayBuffer();
+      let meta = {};
+      const charaStr = extractExifMetadata(buffer, 'chara');
+      if(charaStr) {
+          try {
+              const decoded = atob(charaStr); 
+              const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
+              meta = parseTavernJson(textData) || {};
+          } catch (e) {
+              meta = parseTavernJson(charaStr) || {};
+          }
+      }
+      
+      // 读取合并本地最新的修改
+      meta.name = c.name || meta.name || "";
+      meta.description = c.description ?? meta.description ?? "";
+      meta.personality = c.personality ?? meta.personality ?? "";
+      meta.first_mes = c.first_mes ?? meta.first_mes ?? "";
+      meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+      meta.creator_notes = c.note ?? meta.creator_notes ?? "";
+      if (c.tags && c.tags.length > 0) meta.tags = c.tags;
+
+      const fd = new FormData();
+      // 【核心1】回传原来的图片文件名以锁定并保留历史聊天记录
+      fd.append("avatar_url", existChar.avatar);
+      // 【核心2】上传你宝箱里原版的真实 PNG 资源更新卡片封面！
+      fd.append("avatar", blob, existChar.avatar); 
+      // 酒馆要求传入参数为 ch_name 
+      fd.append("ch_name", meta.name);
+      
+      // 【核心3】将包含“对白、世界书、预设”满血 JSON，全部动态压入表单喂给酒馆
+      for (let key in meta) {
+          if (["name", "ch_name"].includes(key)) continue; 
+          let val = meta[key];
+          if (val === undefined || val === null) continue;
+          if (typeof val === 'object') {
+              fd.append(key, JSON.stringify(val));
+          } else {
+              fd.append(key, String(val));
+          }
+      }
+
+      const updateResp = await fetch(tavernProxy + '/api/characters/edit', {
+         method: 'POST',
+         body: fd
+      });
+      if (!updateResp.ok) throw new Error(await updateResp.text());
+      showToast(`📝无损更新设定及封面成功！[${c.name}]`);
     }
 
-    showToast(`🎉 推送成功: [${c.name}]`, "success");
   } catch(e) {
-    alert("推送失败，请检查 API 地址是否正确或网络是否通畅。\n错误详情：" + e.message);
+    alert("网络通讯或覆盖失败\n错误原因：" + e.message);
   } finally {
     hideBusy();
   }
@@ -3122,10 +3170,10 @@ window.addEventListener('DOMContentLoaded', init);
 // 批量与全局 Tavern 同步功能引擎
 //======================================
 
-// 内部核心函数：执行数组队列的批量推送 (原生 PNG 模式)
+// 内部核心函数：执行数组队列的批量推送
 async function execBatchPushToTavern(idList) {
   if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
-  if (!confirm(`准备推送 ${idList.length} 张卡片到酒馆。\n(系统将以纯净 PNG 模式直接导入源文件，卡库内的新设定将不会同步。已有旧卡将被删旧换新)\n确定执行？`)) return;
+  if (!confirm(`准备推送 ${idList.length} 张卡片到酒馆，稍后可以在进度条查看状态。\n(系统会自动比对，旧卡安全更新设定，新卡直接导入)\n确定执行？`)) return;
 
   showBusy('批量推送中', '正在与酒馆建立连接...', 0.05);
   let success = 0, fail = 0;
@@ -3146,23 +3194,51 @@ async function execBatchPushToTavern(idList) {
        const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
 
        try {
-         // 先删除旧卡
-         if (existChar && existChar.avatar) {
-             await fetch(tavernProxy + '/api/characters/delete', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ avatar_url: existChar.avatar })
-             });
+         if (!existChar) {
+           const rawForm = new FormData();
+           const fn = `BatchPush_${Date.now()}_${i}.png`;
+           rawForm.append('avatar', blob, fn);
+           // 新卡上传直接发送原生上传，跳过多余的 edit 操作
+           await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
+         } else {
+           const buffer = await blob.arrayBuffer();
+           let meta = {};
+           const charaStr = extractExifMetadata(buffer, 'chara');
+           if(charaStr) {
+               try {
+                   const decoded = atob(charaStr); 
+                   const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
+                   meta = parseTavernJson(textData) || {};
+               } catch (e) {
+                   meta = parseTavernJson(charaStr) || {};
+               }
+           }
+           
+           meta.name = c.name || meta.name || "";
+           meta.description = c.description ?? meta.description ?? "";
+           meta.personality = c.personality ?? meta.personality ?? "";
+           meta.first_mes = c.first_mes ?? meta.first_mes ?? "";
+           meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+           meta.creator_notes = c.note ?? meta.creator_notes ?? "";
+           if (c.tags && c.tags.length > 0) meta.tags = c.tags;
+
+           const fd = new FormData();
+           fd.append("avatar_url", existChar.avatar);
+           fd.append("avatar", blob, existChar.avatar); 
+           fd.append("ch_name", meta.name);
+           
+           for (let key in meta) {
+               if (["name", "ch_name"].includes(key)) continue; 
+               let val = meta[key];
+               if (val === undefined || val === null) continue;
+               if (typeof val === 'object') {
+                   fd.append(key, JSON.stringify(val));
+               } else {
+                   fd.append(key, String(val));
+               }
+           }
+           await fetch(tavernProxy + '/api/characters/edit', { method: 'POST', body: fd });
          }
-
-         // 直接重新 Import 原生 PNG
-         const rawForm = new FormData();
-         const fn = existChar ? existChar.avatar : `${c.name.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '')}_${Date.now()}.png`;
-         rawForm.append('avatar', blob, fn);
-         
-         const importResp = await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
-         if(!importResp.ok) throw new Error();
-
          success++;
        } catch(e) { fail++; }
        
@@ -3188,10 +3264,10 @@ function pushAllToTavern() {
   execBatchPushToTavern(S.cards.map(c => c.id));
 }
 
-// 终极杀器：供右上角调用的【一键双向同步】 (原生 PNG 模式)
+// 终极杀器：供右上角调用的【一键双向同步】 (先推送到酒馆，再拉取酒馆的新卡)
 async function syncWithTavern() {
   if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
-  if (!confirm("准备执行双向同步：\n1. 将本地源文件直接覆盖至酒馆 (不含本地修改)\n2. 从酒馆抓取本地不存在的新角色\n需等待一段时间，确认开始？")) return;
+  if (!confirm("准备执行终极一键双向同步：\n1. 将本地修改覆盖式推送至酒馆\n2. 从酒馆抓取本地不存在的新角色\n需等待一段时间，确认开始？")) return;
 
   showBusy('一键双向同步', '阶段 1/2: 正在推送卡库数据至云端...', 0.05);
 
@@ -3200,7 +3276,7 @@ async function syncWithTavern() {
     let list = await listResp.json();
     if (!Array.isArray(list)) list = list.default || Object.values(list);
 
-    // --- 阶段一：全库纯净 PNG 覆盖式推送 ---
+        // --- 阶段一：全库无情覆盖式推送 ---
     let pushOk = 0, pushFail = 0;
     for (let i = 0; i < S.cards.length; i++) {
        document.getElementById('busyBar').style.width = ((i / S.cards.length) * 50) + '%'; 
@@ -3212,19 +3288,49 @@ async function syncWithTavern() {
        const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
 
        try {
-         if (existChar && existChar.avatar) {
-             await fetch(tavernProxy + '/api/characters/delete', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ avatar_url: existChar.avatar })
-             });
+         if (!existChar) {
+           const rawForm = new FormData();
+           rawForm.append('avatar', blob, `SyncPush_${Date.now()}_${i}.png`);
+           await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
+         } else {
+           const buffer = await blob.arrayBuffer();
+           let meta = {};
+           const charaStr = extractExifMetadata(buffer, 'chara');
+           if(charaStr) {
+               try {
+                   const decoded = atob(charaStr); 
+                   const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
+                   meta = parseTavernJson(textData) || {};
+               } catch (e) {
+                   meta = parseTavernJson(charaStr) || {};
+               }
+           }
+           
+           meta.name = c.name || meta.name || "";
+           meta.description = c.description ?? meta.description ?? "";
+           meta.personality = c.personality ?? meta.personality ?? "";
+           meta.first_mes = c.first_mes ?? meta.first_mes ?? "";
+           meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+           meta.creator_notes = c.note ?? meta.creator_notes ?? "";
+           if (c.tags && c.tags.length > 0) meta.tags = c.tags;
+
+           const fd = new FormData();
+           fd.append("avatar_url", existChar.avatar);
+           fd.append("avatar", blob, existChar.avatar); 
+           fd.append("ch_name", meta.name);
+           
+           for (let key in meta) {
+               if (["name", "ch_name"].includes(key)) continue; 
+               let val = meta[key];
+               if (val === undefined || val === null) continue;
+               if (typeof val === 'object') {
+                   fd.append(key, JSON.stringify(val));
+               } else {
+                   fd.append(key, String(val));
+               }
+           }
+           await fetch(tavernProxy + '/api/characters/edit', { method: 'POST', body: fd });
          }
-
-         const rawForm = new FormData();
-         const fn = existChar ? existChar.avatar : `${c.name.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '')}_${Date.now()}.png`;
-         rawForm.append('avatar', blob, fn);
-
-         await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
          pushOk++;
        } catch(e) { pushFail++; }
        
@@ -3253,6 +3359,7 @@ async function syncWithTavern() {
          if(!avatarResp.ok) throw new Error();
          const avatarBlob = await avatarResp.blob();
          
+         // ---- 新增：强制解包下载图片的 EXIF 原始设定 ----
          const buffer = await avatarBlob.arrayBuffer();
          let meta = {};
          const charaStr = extractExifMetadata(buffer, 'chara');
@@ -3269,8 +3376,11 @@ async function syncWithTavern() {
          const reader = new FileReader();
          const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(new Blob([buffer])); });
          
+         // 融合 EXIF 数据与接口摘要，EXIF 优先级最高
          const charData = ci.data || ci; 
          const finalDesc = meta.description || charData.description || ci.description || "";
+
+         // --- 修复：提取世界书、预设、对白数据 ---
          const finalMeta = (meta && Object.keys(meta).length > 0) ? meta : (ci.data || ci || {});
          const dlgs = [];
          if(finalMeta.mes_example) dlgs.push(finalMeta.mes_example);
@@ -3279,7 +3389,7 @@ async function syncWithTavern() {
              finalMeta.alternate_greetings.forEach(g => dlgs.push(g));
          }
          let wbEntries = [];
-         if(finalMeta.character_book && finalMeta.character_book.entries) {
+                          if(finalMeta.character_book && finalMeta.character_book.entries) {
                const entriesArr = Array.isArray(finalMeta.character_book.entries) ? finalMeta.character_book.entries : Object.values(finalMeta.character_book.entries);
                wbEntries = entriesArr.map(e => ({
                  name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (Array.isArray(e.key) ? e.key.join(', ') : (e.keys || e.key || '')),
@@ -3293,7 +3403,7 @@ async function syncWithTavern() {
                  enabled: e.enabled !== undefined ? e.enabled : true,
                  selective: e.selective !== undefined ? e.selective : true
                }));
-         } else if (finalMeta.world_info && typeof finalMeta.world_info === 'object') {
+             } else if (finalMeta.world_info && typeof finalMeta.world_info === 'object') {
            wbEntries = Object.values(finalMeta.world_info).map(e => ({
              keys: (e.keys || e.key || []).join?.(', ') || '',
              content: e.content || e.value || ''
@@ -3308,6 +3418,7 @@ async function syncWithTavern() {
          if(Array.isArray(rx)) {
              rx.forEach(s => { if(s && (s.scriptName || s.name)) pres.push({name: '⟢ ' + (s.scriptName || s.name), content: s.replaceString || s.replace || s.findRegex || s.content || ''}) });
          }
+         // --- 提取结束 ---
 
          const newCard = {
             id: 'c_' + uuid(),
@@ -3334,12 +3445,12 @@ async function syncWithTavern() {
          await dbP('cards', newCard);
          pullOk++;
        } catch(ex) { }
-    }
+	   }
 
     await loadCardsLightweight(); 
     renderAll();
     closeModal('settingsModal');
-    alert(`🎉 原生双向同步完成！\n\n📤 本地发往酒馆: ${pushOk} 张\n📥 酒馆新卡拉取回库: ${pullOk} 张\n(忽略无效卡: ${pushFail})`);
+    alert(`🎉 一键双向同步完成！\n\n📤 本地发往酒馆 (新增/热更): ${pushOk} 张\n📥 酒馆新卡拉取回库: ${pullOk} 张\n(忽略无效卡: ${pushFail})`);
 
   } catch(err) {
     alert('双向同步因异常中断: ' + err.message);
