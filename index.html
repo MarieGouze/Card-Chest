@@ -63,11 +63,19 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
   overflow-y: auto;
   transition: width 0.3s;
 }
-/* 激屏平板/桌面端开启双栏模式时 */
+/* 大屏双栏响应式及拖拽样式 */
+:root { --rp-w: 450px; }
 @media(min-width: 900px) {
-  .app-container.split-active .right-pane { display: flex; width: 450px; }
-  .app-container.split-active .left-pane { width: calc(100% - 450px); }
+  .app-container.split-active .right-pane { display: flex; width: var(--rp-w); flex-shrink: 0; }
+  .app-container.split-active .left-pane { flex: 1; width: 0; } /* 让左侧自动撑满剩余空间 */
+  .app-container.split-active .resizer { display: block; }
 }
+.resizer { display: none; width: 8px; cursor: col-resize; background: transparent; transition: background 0.2s; z-index: 10; margin-left: -4px; margin-right: -4px; position: relative; }
+.resizer:hover, .resizer.dragging { background: var(--ink); }
+
+/* 详情页全屏状态 (配合刚刚的放大按钮) */
+.app-container.fullscreen-detail .right-pane { position: absolute; inset: 0; width: 100% !important; max-width: 100%; z-index: 100; transition: none; }
+.app-container.split-active .mclose.fs-btn { display: block; } /* 确保双栏时放大按钮也显示 */
 
 /* =======================================
    顶部与导航 
@@ -281,10 +289,18 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 .mclose:hover{background:var(--ink);color:var(--p)}
 .modal-body{padding:12px 14px 40px}
 
-/* 大屏模式下隐藏详情弹窗的毛玻璃和边框，将其融为右侧栏 */
-.app-container.split-active #detailModal { position: relative; opacity: 1; pointer-events: auto; display: block; z-index: 1; background: transparent; align-items: flex-start; justify-content: flex-start; height: 100%; }
-.app-container.split-active #detailModal .modal-box { max-width: none; height: 100%; max-height: none; transform: none; border: none; background: transparent; }
-.app-container.split-active #detailModal .mclose { display: none; } /* 双栏下隐藏关闭按钮 */
+/* 大屏双栏/全屏模式下：修复右侧详情栏的尺寸，并强制显示所有按钮 */
+.right-pane .modal-box { 
+  max-width: 100% !important; 
+  height: 100% !important; 
+  max-height: none !important; 
+  transform: none !important; 
+  border: none !important; 
+  background: transparent; 
+}
+.right-pane .mclose { 
+  display: inline-block !important; 
+}
 
 /* 以下维持原详情页内部样式... */
 .note-banner{background:var(--gold);color:#fff;padding:5px 14px 7px;font-size:calc(11px * var(--fs-scale));font-family:var(--sf);line-height:1.5;display:none}
@@ -329,6 +345,41 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 .wb-val{font-size:calc(11px * var(--fs-scale));color:var(--ink2);line-height:1.7;white-space:pre-wrap;padding:8px 10px;border-top:1px solid var(--bd2);background:var(--p2);display:none;max-height:150px;overflow-y:auto}
 .wb-entry.open .wb-val{display:block}
 .wb-entry.open .wb-arr{transform:rotate(180deg)}
+
+/* 世界书关键词 Tag 样式 */
+.wb-keys-wrap { display:none; flex-direction:column; gap:6px; padding:10px 12px; background:var(--p2); border-top:1px dashed var(--bd); }
+.wb-entry.open .wb-keys-wrap { display:flex; }
+.wb-keys-header { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--ink3); font-weight: bold; }
+.wb-btn-fix { background: var(--p3); border: 1px solid var(--bd); color: var(--ink2); border-radius: var(--r); padding: 2px 6px; font-size: 9px; cursor: pointer; transition: all 0.2s; }
+.wb-btn-fix:hover { background: var(--ink); color: var(--p); border-color: var(--ink); }
+.wb-tags-box { display: flex; flex-wrap: wrap; gap: 4px; }
+.wb-tag-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; background: rgba(184,150,62,0.1); border: 1px solid rgba(184,150,62,0.3); color: var(--gold); border-radius: var(--r); font-size: 10px; font-family: var(--sf); }
+.wb-tag-chip .wb-tag-del { font-size: 10px; color: var(--red); cursor: pointer; opacity: 0.6; line-height: 1; padding: 0 2px; }
+.wb-tag-chip .wb-tag-del:hover { opacity: 1; }
+.wb-tag-input { flex: 1; min-width: 100px; background: transparent; border: none; outline: none; font-size: 10px; color: var(--ink); padding: 4px; font-family: var(--sf); }
+.wb-tag-input::placeholder { color: var(--ink4); }
+.wb-tags-container { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; background: var(--p3); border: 1px solid var(--bd); padding: 4px 6px; border-radius: var(--r); transition: border-color 0.2s; cursor: text; }
+.wb-tags-container:focus-within { border-color: var(--gold); }
+.wb-btn-add { background: var(--gold); color: #fff; border: none; border-radius: var(--r); padding: 0 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-left: 4px; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
+.wb-btn-add:active { transform: scale(0.85); background: var(--orange); }
+/* ================= 美化版：世界书设置与喵喵工坊风格开关 ================= */
+.mc-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; font-size: 10px; font-weight: bold; color: var(--ink2); user-select: none; }
+.mc-toggle input { display: none; }
+.mc-toggle-track { width: 32px; height: 18px; background: var(--bd); border-radius: 10px; position: relative; transition: background 0.25s ease; flex-shrink: 0; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1); }
+.mc-toggle-track::before { content: ''; position: absolute; width: 14px; height: 14px; background: var(--p); border-radius: 50%; top: 2px; left: 2px; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+.mc-toggle input:checked + .mc-toggle-track { background: var(--ink); }
+.mc-toggle input:checked + .mc-toggle-track::before { transform: translateX(14px); }
+
+.wb-settings { display:none; flex-wrap:wrap; gap:8px; padding:12px; background:var(--p2); border-top:1px dashed var(--bd); font-size:10px; color:var(--ink2); align-items:center; }
+.wb-entry.open .wb-settings { display:flex; }
+.wb-set-item { display:flex; align-items:center; background:var(--p3); border:1px solid var(--bd); border-radius:var(--r); overflow:hidden; transition:border-color 0.2s; }
+.wb-set-item:focus-within { border-color: var(--gold); }
+.wb-set-item label { padding: 4px 6px; background: rgba(44,36,22,0.04); border-right: 1px solid var(--bd2); color: var(--ink3); font-weight: bold; cursor: default; }
+.wb-set-item select, .wb-set-item input[type="number"] { background: transparent; border: none; color: var(--ink); font-size: 10px; padding: 4px 6px; outline: none; width: auto; font-family: var(--sf); font-weight: bold;}
+.wb-set-item input[type="number"] { width: 42px; text-align: center; }
+.wb-set-item select:focus, .wb-set-item input:focus { background: var(--p); }
+/* ===================================================================== */
+.expand-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .preset-list{display:flex;flex-direction:column;gap:3px}
 .preset-item{font-size:calc(11px * var(--fs-scale));color:var(--ink2);font-family:var(--sf);padding:6px 10px;background:var(--p3);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer}
@@ -433,7 +484,13 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 .tag-quick:hover{background:var(--ink);color:var(--p)}
 .divider{height:1px;background:var(--bd);margin:10px 0}
 
-.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--ink);color:var(--p);padding:7px 16px;font-size:11px;z-index:9999;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;max-width:80vw;text-align:center;letter-spacing:.05em}
+/* ================= 堆叠式 Toast 通知 ================= */
+.toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast-item { pointer-events: auto; background: var(--ink); color: var(--p); padding: 10px 16px; font-size: 11px; border-radius: var(--r); box-shadow: 0 6px 16px var(--sh); animation: toastIn 0.2s ease forwards; border-left: 4px solid var(--gold); display: flex; align-items: center; min-width: 180px; max-width: 80vw; letter-spacing: .05em; font-family: var(--ss); font-weight: bold; }
+.toast-item.error { border-left-color: var(--red); }
+.toast-item.success { border-left-color: #10b981; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-15px); } }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .busy-mask{position:fixed;inset:0;z-index:9500;background:rgba(44,36,22,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:32px}
 .busy-mask.show{display:flex}
@@ -651,6 +708,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   </div><!-- end left-pane -->
 
   <!-- 右栏：大屏双栏时的详情面板替代品 -->
+  <div class="resizer" id="resizer"></div>
   <div class="right-pane" id="rightPane">
     <!-- 内容将由 openDetail() 动态转移入此 -->
   </div>
@@ -658,7 +716,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 <button class="fab" onclick="openImport()">＋</button>
 <button class="fab btt-btn" id="bttBtn" onclick="scrollToTop()">↑</button>
 
-<div class="toast" id="toast"></div>
+<div class="toast-container" id="toastContainer"></div>
 
 <div class="busy-mask" id="busyMask">
   <div class="busy-box">
@@ -710,7 +768,13 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 <div class="modal-mask" id="detailModal">
   <div class="modal-box">
-    <div class="modal-hd"><span class="modal-title" id="detailTitle">—</span><button class="mclose" onclick="closeModal('detailModal')">✕</button></div>
+    <div class="modal-hd">
+      <span class="modal-title" id="detailTitle">—</span>
+      <div style="display:flex; gap:5px;">
+        <button class="mclose fs-btn" onclick="toggleDetailFullscreen()" title="全屏/还原">⛶</button>
+        <button class="mclose" onclick="closeModal('detailModal')">✕</button>
+      </div>
+    </div>
     <div class="note-banner" id="noteBanner"></div>
     <div class="modal-body" id="detailContent"></div>
   </div>
@@ -821,7 +885,52 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 <div class="modal-mask" id="moveModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">MOVE TO SECTION</span><button class="mclose" onclick="closeModal('moveModal')">✕</button></div><div class="modal-body" id="moveSectionList"></div></div></div>
 <div class="modal-mask" id="editTagModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">EDIT TAGS</span><button class="mclose" onclick="closeModal('editTagModal')">✕</button></div><div class="modal-body" id="editTagContent"></div></div></div>
+<div class="modal-mask" id="cardReplaceModal"><div class="modal-box" style="max-width:400px;"><div class="modal-hd"><span class="modal-title">🔁 局部内容精确替换</span><button class="mclose" onclick="closeModal('cardReplaceModal')">✕</button></div><div class="modal-body"><div style="font-size:11px; color:var(--ink3); margin-bottom:10px;">将在这张卡片的描述、性格、备忘及所有世界书中执行全局替换。</div><div class="inp-row" style="margin-top:0"><input type="text" class="inp" id="crFindInp" placeholder="要查找的旧文本..."></div><div class="inp-row"><input type="text" class="inp" id="crReplaceInp" placeholder="要替换的新文本（留空则为删除）..."></div><div class="act-row"><button class="actbtn pri" style="width:100%" onclick="executeCardReplace()">确认执行无损热更新</button></div></div></div></div>
 <div class="modal-mask" id="grpModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">ASSIGN GROUP</span><button class="mclose" onclick="closeModal('grpModal')">✕</button></div><div class="modal-body" id="grpModalList"></div></div></div>
+<div class="modal-mask" id="tavernPullModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">PULL FROM TAVERN</span>
+      <button class="mclose" onclick="closeModal('tavernPullModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">
+        已从酒馆获取角色列表。系统已自动比对本地卡库。
+      </div>
+      <div class="act-row" style="margin-bottom:10px;">
+        <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="tpCheckSmart()">✨ 智能勾选 (本地缺失)</button>
+        <button class="actbtn" onclick="tpCheckAll()">全选</button>
+        <button class="actbtn" onclick="tpCheckNone()">全不选</button>
+      </div>
+      <div id="tpList" style="max-height:50vh; overflow-y:auto; border:1px solid var(--bd); border-radius:var(--r); background:var(--p2);"></div>
+      <div class="act-row" style="margin-top:12px;">
+        <button class="actbtn pri" onclick="executeTavernPull()">⬇ 确认拉取选中的卡片</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="webdavPullModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">WEBDAV CLOUD RECOVERY</span>
+      <button class="mclose" onclick="closeModal('webdavPullModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">
+        从云端读取到了以下备份。你可以单独勾选需要的卡片恢复到本地。
+      </div>
+      <div class="act-row" style="margin-bottom:10px;">
+        <button class="actbtn" onclick="wdCheckAll()">全选</button>
+        <button class="actbtn" onclick="wdCheckNone()">全不选</button>
+      </div>
+      <div id="wdList" style="max-height:50vh; overflow-y:auto; border:1px solid var(--bd); border-radius:var(--r); background:var(--p2); padding: 5px;"></div>
+      <div class="act-row" style="margin-top:12px;">
+        <button class="actbtn pri" onclick="executeWebdavPull()">☁️ 从云端恢复选中项</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="read-mask" id="readMask">
 <div class="read-box">
@@ -833,7 +942,10 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
     <button class="mclose" style="margin-left:8px" onclick="closeRead()">✕</button>
   </div>
 </div>
-<div class="read-body" id="readBody"></div>
+<div style="display:flex; flex:1; overflow:hidden;">
+  <div id="readSidebar" style="width:240px; border-right:1px solid var(--bd); background:var(--p3); overflow-y:auto; display:none; flex-shrink:0; padding:6px 0;"></div>
+  <div class="read-body" id="readBody" style="flex:1;"></div>
+</div>
 </div>
 </div>
 
@@ -1100,6 +1212,7 @@ async function init() {
 
   await loadCardsLightweight();
   renderAll(); bindEvents(); maybeShowTutorial();
+  migrateThumbs(); // 恢复：后台静默生成缺失的缩略图
   if (webdavConfig.url && webdavConfig.autoSync) setTimeout(autoSyncCheck, 3000);
 }
 
@@ -1325,7 +1438,7 @@ function mkCardEl(card, isDup, q, gm) {
   const hoverActions = `<div class="card-hover-actions">
     <button class="cha-btn" onclick="event.stopPropagation(); openLightbox('${card.id}')">👁️ 预览大图</button>
     <button class="cha-btn" onclick="event.stopPropagation(); exportCard('${card.id}')">↑ 导出</button>
-    ${tavernProxy ? `<button class="cha-btn st-push" onclick="event.stopPropagation(); pushCardToTavern('${card.id}')">☁️ 推送至酒馆</button>` : ''}
+    <button class="cha-btn st-push" onclick="event.stopPropagation(); pushCardToTavern('${card.id}')">☁️ 推送至酒馆</button>
   </div>`;
 
   if (S.layout === 'list') {
@@ -1461,10 +1574,10 @@ function clearSearch() { document.getElementById('searchInput').value = ''; S.se
 // 卡片详细数据加载与详情页渲染 (大屏右滑/小屏弹窗)
 // ============================================================
 let _currentDetailId = null;
+let dlgIdx = 0; // ✨ 显式声明全局对白翻页索引
 
 async function openDetail(id) {
   let card = S.cards.find(c => c.id === id); if (!card) return;
-  // 要获取完整数据，需从 IndexedDB 提取
   const full = await dbG('cards', id); if (full) { Object.assign(card, full); card._fullLoaded = true; }
   _currentDetailId = id;
   
@@ -1475,7 +1588,6 @@ async function openDetail(id) {
   const covSrc = isImage && card.originalDataUrl ? card.originalDataUrl : (card._thumbBlobUrl || null);
   const cov = covSrc ? `<img src="${covSrc}" onclick="openLightbox('${id}')" alt="">` : `<div class="dcov-ph">◫</div>`;
   
-  // 网状关联卡片
   let relatedHtml = '';
   if (card.tags && card.tags.length > 0) {
      const relSet = new Set();
@@ -1487,30 +1599,124 @@ async function openDetail(id) {
      }
   }
 
-  // Tokens估算
-  const tokenBadge = renderTokenBadge(card.charCount, JSON.stringify(card));
-
+  const textForToken = [
+    card.description, card.personality, card.mesExample, card.first_mes, card.scenario, card.note
+  ].join('\n') + 
+  (card.dialogEntries || []).join('\n') + 
+  (card.worldBookEntries || []).map(e => e.content).join('\n') +
+  (card.presetEntries || []).map(p => p.content).join('\n');
+  
+  const tokenBadge = renderTokenBadge(card.charCount, textForToken);
+  
   const allTags = card.tags || [];
   const th = allTags.map(t => `<button class="dtag" onclick="editSingleTag('${id}','${t}')">${esc(t)} ✕</button>`).join('');
   const sb = (card.subtags || []).map(t => `<button class="dsubtag" onclick="editSingleSubTag('${id}','${t}')">${esc(t)} ✕</button>`).join('');
   let ns = card.note || '';
 
-  // 沉浸是对白示例
-  let chatHtml = '';
-  if (card.mesExample && card.mesExample.trim().length > 0) {
-    let raw = card.mesExample.replace(/<([^>]+)>/g, '').trim();
-    // 简单分词逻辑
-    const msgArray = raw.split(/{{user}}:|{{char}}:/gi).filter(x => x.trim().length > 0);
-    const msgs = []; let isUser = raw.toLowerCase().startsWith('{{user}}');
-    msgArray.forEach(m => { msgs.push({ role: isUser ? 'user' : 'char', text: m.trim() }); isUser = !isUser; });
-    
-    chatHtml = `<div class="sec-hd">💬 对白 / DIALOG</div><div class="chat-wrap">` + 
-      msgs.map(m => `
-        <div class="chat-msg ${m.role === 'user' ? 'chat-user' : 'chat-char'}">
-          <div class="chat-name">${m.role === 'user' ? 'USER' : esc(card.name)}</div>
-          ${esc(m.text)}
+  let wbH = '';
+  if ((card.worldBookEntries || []).length > 0) {
+    wbH = `<div class="sec-hd">🌍 世界书 / WORLD BOOK · ${card.worldBookEntries.length} 条目</div>`;
+    card.worldBookEntries.forEach((e, i) => {
+      const rawPos = e.position !== undefined ? e.position : 0;
+      const rawRole = e.role !== undefined ? e.role : 0;
+      const posValue = `${rawPos}_${rawRole}`;
+      const rawDepth = e.depth !== undefined ? e.depth : 4;
+      const rawOrder = e.order !== undefined ? e.order : 100;
+      const rawProb = e.probability !== undefined ? e.probability : 100;
+      const isConstant = !!e.constant;
+      const isEnabled = e.enabled !== undefined ? e.enabled : true;
+      
+      // 【兼容老数据】严格梳理喵喵工坊的安全字段逻辑
+      const displayTitle = e.name || e.comment || e.keys || '（无标题）';
+      let rawKeys = e.keys || '';
+      if (!e.name && e.keys) {
+          rawKeys = ''; // 防止老数据将巨型标题识别成一万个标签
+      }
+      if (e.actual_keywords !== undefined) {
+          rawKeys = e.actual_keywords; 
+      }
+      
+      const tagsArray = rawKeys.split(/[,，、]+/).map(t => t.trim()).filter(Boolean);
+      const tagsHtml = tagsArray.map((t, idxTag) => 
+        `<span class="wb-tag-chip">${esc(t)} <span class="wb-tag-del" onclick="removeWbTag(event, '${id}', ${i}, ${idxTag})">✕</span></span>`
+      ).join('');
+
+      wbH += `<div class="wb-entry" style="${isEnabled ? '' : 'opacity: 0.6;'}">
+        <div class="wb-row" onclick="this.parentElement.classList.toggle('open')">
+          <span class="wb-row-key" id="wb_row_key_${id}_${i}" style="${isEnabled ? '' : 'text-decoration: line-through;'}">${esc(displayTitle)}</span>
+          <label class="mc-toggle" title="${isEnabled ? '已启用' : '已禁用'}" style="margin-left: auto;" onclick="event.stopPropagation()">
+            <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="updateWbSetting('${id}', ${i}, 'enabled', this.checked)">
+            <span class="mc-toggle-track"></span>
+          </label>
+          <span class="wb-cnt" style="margin-left: 6px;">${fmtN((e.content || '').length)}字</span>
+          <button class="expand-btn" style="margin-left:4px; padding:1px 6px;" onclick="event.stopPropagation(); openRead('wb_${i}_${id}')" title="全屏阅读">⛶</button>
+          <span class="wb-arr">▾</span>
         </div>
-      `).join('') + `</div>`;
+        
+        <div class="wb-keys-wrap" onclick="event.stopPropagation()">
+            <div class="wb-keys-header">
+                <span>🔑 触发词Tag (支持点击右侧 ＋ 添加)</span>
+                <button class="wb-btn-fix" onclick="fixWbKeys('${id}', ${i})">🛠️ 修复标点/格式</button>
+            </div>
+            <div class="wb-tags-container" onclick="this.querySelector('.wb-tag-input').focus()">
+                <div class="wb-tags-box" id="wb_tags_box_${id}_${i}">${tagsHtml}</div>
+                <input type="text" class="wb-tag-input" id="wb_tag_input_${id}_${i}" placeholder="输入词汇..." onkeydown="handleWbTagKeyDown(event, '${id}', ${i})">
+                <button class="wb-btn-add" onclick="addWbTagFromInput('${id}', ${i}); event.stopPropagation();">＋</button>
+            </div>
+        </div>
+
+        <div class="wb-settings" onclick="event.stopPropagation()">
+          <div class="wb-set-item" title="插入位置"><label>📌位置</label><select onchange="updateWbSetting('${id}', ${i}, 'pos_role', this.value)">
+              <option value="0_0" ${posValue==='0_0'?'selected':''}>角色前</option>
+              <option value="1_0" ${posValue==='1_0'?'selected':''}>角色后</option>
+              <option value="2_0" ${posValue==='2_0'?'selected':''}>注释前</option>
+              <option value="3_0" ${posValue==='3_0'?'selected':''}>注释后</option>
+              <option value="4_0" ${posValue==='4_0'?'selected':''}>深度(系统)</option>
+              <option value="4_1" ${posValue==='4_1'?'selected':''}>深度(用户)</option>
+              <option value="4_2" ${posValue==='4_2'?'selected':''}>深度(AI)</option>
+          </select></div>
+          <div class="wb-set-item" title="插入深度"><label>🐚深度</label><input type="number" value="${rawDepth}" onchange="updateWbSetting('${id}', ${i}, 'depth', this.value)"></div>
+          <div class="wb-set-item" title="排列顺序，越小越靠前"><label>⚙️顺序</label><input type="number" value="${rawOrder}" onchange="updateWbSetting('${id}', ${i}, 'order', this.value)"></div>
+          <div class="wb-set-item" title="触发概率"><label>🎲触发%</label><input type="number" min="0" max="100" value="${rawProb}" onchange="updateWbSetting('${id}', ${i}, 'probability', this.value)"></div>
+          <label class="mc-toggle" title="常驻生效 (无视关键词触发)" style="margin-left: 2px;">
+            <input type="checkbox" ${isConstant ? 'checked' : ''} onchange="updateWbSetting('${id}', ${i}, 'constant', this.checked)">
+            <span class="mc-toggle-track"></span> 常驻
+          </label>
+        </div>
+        <div class="wb-val">${esc(e.content || '')}</div>
+      </div>`;
+    });
+  }
+
+  let presetH = '';
+  if ((card.presetEntries || []).length > 0) {
+    presetH = `<div class="sec-hd">⚙️ 预设 / PRESET · ${card.presetEntries.length} 条目</div><div class="preset-list">`;
+    card.presetEntries.forEach((p, pi) => {
+      const name = typeof p === 'string' ? p : (p.name || '');
+      const content = typeof p === 'string' ? '' : (p && typeof p.content === 'string' ? p.content : '');
+      const hasContent = content.trim().length > 0;
+      presetH += `<div class="preset-item" onclick="this.classList.toggle('open')">
+        <div class="preset-item-hd"><span class="preset-item-name">${esc(name)}</span><span class="preset-item-arr">${hasContent ? fmtN(content.length) + '字 ▾' : '—'}</span></div>
+        ${hasContent ? `<div class="preset-item-val">${esc(content)}</div>` : ''}
+      </div>`;
+    });
+    presetH += `</div>`;
+  }
+
+  const dlgs = card.dialogEntries || [];
+  window._currentDlgs = dlgs; 
+  window._currentCharName = card.name;
+  dlgIdx = 0;
+  let chatHtml = '';
+  if (dlgs.length > 0) {
+    let navH = dlgs.length > 1 ? `
+      <div class="dlg-nav">
+        <button class="dnbtn" id="dlgP" onclick="navDlgV4(-1)" disabled>◀</button>
+        <span class="dlg-idx" id="dlgI">1 / ${dlgs.length}</span>
+        <span class="dlg-cnt" id="dlgC">${fmtN((dlgs[0]||'').length)}字</span>
+        <button class="dnbtn" id="dlgN" onclick="navDlgV4(1)">▶</button>
+      </div>` : '';
+    chatHtml = `<div class="sec-hd">💬 对白 / DIALOG <button class="expand-btn" style="margin-left:auto" onclick="openRead('dlg_${id}')">全屏阅读</button></div>${navH}<div class="chat-wrap" id="dlgBoxV4">${renderBubbleV4(dlgs[0], card.name)}</div>`;
   }
 
   const html = `
@@ -1531,7 +1737,7 @@ async function openDetail(id) {
       <button class="dact" onclick="exportCard('${id}')">↑ 导出</button>
       <button class="dact" onclick="openMoveModal('${id}')">→ 移动区</button>
       <button class="dact" onclick="openGrpModal('${id}')">▣ 分组</button>
-      ${tavernProxy ? `<button class="dact push" title="推送热更新" onclick="pushCardToTavern('${id}')">☁️ 推送</button>` : ''}
+      <button class="dact push" title="推送热更新" onclick="pushCardToTavern('${id}')">☁️ 推送</button>
     </div>
 
     ${ns ? `<div class="cbox" style="margin-bottom:10px;background:var(--p2);position:relative;">${esc(ns)}<button class="hbtn" style="position:absolute;top:2px;right:2px;font-size:10px" onclick="editMeta('${id}','note')">✎</button></div>` : ''}
@@ -1539,24 +1745,169 @@ async function openDetail(id) {
     <div class="dtags-row">${th}<button class="add-tag-btn" onclick="openAddTagModal('${id}')">＋</button></div>
     <div class="dtags-row">${sb}<button class="add-tag-btn" onclick="openAddSubTagModal('${id}')" style="color:var(--gold);border-color:rgba(184,150,62,0.3)">＋小标签</button></div>
     
-    <div class="sec-hd">📝 备忘录 / NOTE</div>
-    <textarea class="note-ta" placeholder="关于这张卡的私密备忘...（失焦自动保存）" onblur="saveNote('${id}', this.value)">${esc(ns)}</textarea>
-    
-    <div class="sec-hd">📖 简介 / DESC <button class="hbtn" style="font-size:10px" onclick="editMeta('${id}','description')">✎</button></div>
-    <div class="cbox">${esc(card.description||'无简介')}</div>
+    <div class="sec-hd">📝 备忘录 / NOTE
+      <button class="expand-btn" style="margin-left:8px;" onclick="undoNote()" id="noteUndoBtn" disabled>↶ 撤销</button>
+      <button class="expand-btn" style="margin-left:4px;" onclick="redoNote()" id="noteRedoBtn" disabled>↷ 重做</button>
+      <button class="expand-btn" style="margin-left:auto; color:var(--gold); border-color:rgba(184,150,62,0.3);" onclick="openCardReplaceModal('${id}')">🔁 文本替换</button>
+    </div>
+    <textarea class="note-ta" id="noteArea" placeholder="关于这张卡的私密备忘...">${esc(ns)}</textarea>
+	
+    <div class="sec-hd">📖 简介 / DESC 
+      <button class="hbtn" style="font-size:10px" onclick="editMeta('${id}','description')">✎</button>
+      <button class="expand-btn" style="margin-left:auto" onclick="openRead('desc_${id}')">全屏阅读</button>
+    </div>
+	<div class="cbox">${esc(card.description||'无简介')}</div>
 
     ${chatHtml}
+    ${wbH}
+    ${presetH}
     ${relatedHtml}
     
     <div style="margin-top:20px"><button class="dact del" style="width:100%" onclick="trashCard('${id}')">✕ 移至回收站</button></div>
   `;
   document.getElementById('detailContent').innerHTML = html;
   
-  // 检查是否是大屏双栏模式
   checkSplitPaneMode();
   if (!document.getElementById('appContainer').classList.contains('split-active')) {
      openModal('detailModal');
   }
+
+  window._noteHistory = window._noteHistory || [];
+  window._noteFuture = window._noteFuture || [];
+  window._noteActiveId = id;
+  const na = document.getElementById('noteArea');
+  window._noteLastVal = na ? na.value : '';
+
+  window.updateNoteActionButtons = function() {
+    const uBtn = document.getElementById('noteUndoBtn');
+    const rBtn = document.getElementById('noteRedoBtn');
+    if(uBtn) uBtn.disabled = (window._noteHistory.length === 0);
+    if(rBtn) rBtn.disabled = (window._noteFuture.length === 0);
+  };
+
+  window.undoNote = function() {
+    if (!window._noteHistory.length) return;
+    const txtArea = document.getElementById('noteArea');
+    window._noteFuture.push(txtArea.value);
+    const prev = window._noteHistory.pop();
+    txtArea.value = prev; window._noteLastVal = prev;
+    window.updateNoteActionButtons();
+    saveNote(window._noteActiveId, prev);
+  };
+
+  window.redoNote = function() {
+    if (!window._noteFuture.length) return;
+    const txtArea = document.getElementById('noteArea');
+    window._noteHistory.push(txtArea.value);
+    const next = window._noteFuture.pop();
+    txtArea.value = next; window._noteLastVal = next;
+    window.updateNoteActionButtons();
+    saveNote(window._noteActiveId, next);
+  };
+
+  window.openCardReplaceModal = function(cardId) {
+    window._replaceTargetCardId = cardId;
+    document.getElementById('crFindInp').value = '';
+    document.getElementById('crReplaceInp').value = '';
+    openModal('cardReplaceModal');
+  };
+
+  window.executeCardReplace = async function() {
+    const cid = window._replaceTargetCardId;
+    const findStr = document.getElementById('crFindInp').value;
+    const repStr = document.getElementById('crReplaceInp').value;
+    if(!findStr) return showToast('请输入要查找的文本', 'error');
+
+    const f = await dbG('cards', cid);
+    if(!f) return;
+
+    let totalReplacements = 0;
+    const repFn = (str) => {
+      if(!str) return str;
+      const count = (str.split(findStr).length - 1);
+      totalReplacements += count;
+      return str.replaceAll(findStr, repStr);
+    };
+
+    if(f.description) f.description = repFn(f.description);
+    if(f.personality) f.personality = repFn(f.personality);
+    if(f.scenario) f.scenario = repFn(f.scenario);
+    if(f.note) f.note = repFn(f.note);
+    if(f.mesExample) f.mesExample = repFn(f.mesExample);
+    if(f.dialogEntries) f.dialogEntries = f.dialogEntries.map(repFn);
+
+    if(f.worldBookEntries) {
+      f.worldBookEntries.forEach(e => {
+        if(e.content) e.content = repFn(e.content);
+        if(e.name) e.name = repFn(e.name);
+        if(e.actual_keywords) e.actual_keywords = repFn(e.actual_keywords);
+      });
+    }
+
+    if(totalReplacements === 0) {
+      showToast('未在该卡片中找到匹配的文本内容', 'error');
+    } else {
+      await dbP('cards', f);
+      closeModal('cardReplaceModal');
+      const lightCard = S.cards.find(x => x.id === cid);
+      if(lightCard) { lightCard.description = f.description; lightCard.note = f.note; }
+      openDetail(cid); renderGrid();
+      showToast(`替换成功！共修正 ${totalReplacements} 处。`, 'success');
+    }
+  };
+
+  let nt;
+  if (na) {
+    window.updateNoteActionButtons();
+    na.addEventListener('input', () => {
+      if (na.value !== window._noteLastVal) {
+        window._noteHistory.push(window._noteLastVal);
+        window._noteFuture = [];
+        window._noteLastVal = na.value;
+        window.updateNoteActionButtons();
+      }
+      clearTimeout(nt);
+      nt = setTimeout(async () => { await saveNote(id, na.value); }, 600);
+    });
+  }
+}
+
+  // =========================================================================
+
+
+function renderBubbleV4(raw, charName) {
+  if(!raw || !raw.trim()) return '';
+  let r = String(raw).replace(/<([^>]+)>/g, '').trim();
+  if(!r.toLowerCase().includes('{{char}}:') && !r.toLowerCase().includes('{{user}}:')) {
+     return `<div class="cbox" style="white-space: pre-wrap; border:none; padding:0; background:none;">${esc(raw)}</div>`;
+  }
+  const msgArray = r.split(/{{user}}:|{{char}}:/gi).filter(x => x.trim().length > 0);
+  const msgs = []; let isUser = r.toLowerCase().startsWith('{{user}}');
+  msgArray.forEach(m => { msgs.push({ role: isUser ? 'user' : 'char', text: m.trim() }); isUser = !isUser; });
+  return msgs.map(m => `
+      <div class="chat-msg ${m.role === 'user' ? 'chat-user' : 'chat-char'}">
+        <div class="chat-name">${m.role === 'user' ? 'USER' : esc(charName)}</div>
+        ${esc(m.text)}
+      </div>
+    `).join('');
+}
+
+function navDlgV4(dir) {
+  if(!window._currentDlgs) return;
+  const total = window._currentDlgs.length;
+  dlgIdx = Math.max(0, Math.min(total - 1, dlgIdx + dir));
+  const box = document.getElementById('dlgBoxV4');
+  if(box) box.innerHTML = renderBubbleV4(window._currentDlgs[dlgIdx], window._currentCharName);
+  
+  const p = document.getElementById('dlgP'), n = document.getElementById('dlgN');
+  if(p) p.disabled = (dlgIdx === 0);
+  if(n) n.disabled = (dlgIdx >= total - 1);
+  
+  const idxEl = document.getElementById('dlgI');
+  if(idxEl) idxEl.textContent = (dlgIdx + 1) + ' / ' + total;
+  
+  const cntEl = document.getElementById('dlgC');
+  if(cntEl) cntEl.textContent = fmtN((window._currentDlgs[dlgIdx]||'').length) + '字';
 }
 
 async function saveNote(id, val) {
@@ -1690,7 +2041,7 @@ async function pushCardToTavern(id) {
       }
 	  
       const fd = new FormData();
-      fd.append("avatar", newAvatar);
+      fd.append("avatar_url", newAvatar); // 修复: 热更新接口必须用 avatar_url
       fd.append("ch_name", c.name || "");
       fd.append("description", c.description || "");
       fd.append("personality", c.personality || "");
@@ -1708,7 +2059,7 @@ async function pushCardToTavern(id) {
       const fd = new FormData();
 
       // 【核心突破】：回传酒馆已有的内部图像文件名，告诉酒馆“就是这只”，这样肯定不会丢聊天记录！
-      fd.append("avatar", existChar.avatar);
+      fd.append("avatar_url", existChar.avatar); // 修复: 热更新接口必须用 avatar_url
 
       // 将最新文本赋予给服务器。
       // 为防止卡库遗漏了某些特殊的高级参数，如果卡库里没改过的，优先拿服务器旧数据保底。
@@ -1743,98 +2094,139 @@ async function pushCardToTavern(id) {
   }
 }
 
-// 批量从酒馆拉取
-// 批量从酒馆拉取 (彻底兼容修正版)
+// ============================================================
+// 重写：酒馆智能拉取选单 (Tavern Pull UI)
+// ============================================================
+let _tavernPullList = []; 
+
 async function pullFromTavern() {
   if(!tavernProxy) return alert("请先配置 Tavern API Proxy!");
-  if(!confirm("准备从酒馆全量同步卡片列表(只下载不存在的新卡)，耗时可能较长，确认执行？")) return;
+  showBusy('请求酒馆数据', '正在获取远端角色列表...', 0.2);
   
-  showBusy('请求酒馆数据', '正在通过代理网关直连酒馆...', 0.1);
   try {
-    // 1. 修正路径：SillyTavern 获取所有角色的真实接口是 POST /api/characters/all
-    let resp = await fetch(tavernProxy + '/api/characters/all', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({})
-    });
-    
-    // Fallback: 防备酒馆部分版本转为 GET 请求模式
-    if(!resp.ok) resp = await fetch(tavernProxy + '/api/characters/all');
-    if(!resp.ok) throw new Error(`服务端返回 ${resp.status}，无法获取列表。`);
+    let resp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    if(!resp.ok) throw new Error(`服务端返回 ${resp.status}`);
     
     let list = await resp.json();
-    
-    // 兼容酒馆可能返回不同的 JSON 结构 (部分版本存在 .default 下)
     if (!Array.isArray(list)) list = list.default || Object.values(list);
     
-    let imported = 0; let total = list.length;
-    for(let i=0; i<total; i++) {
-       const ci = list[i];
-       const hashCandidate = await asyncHash(ci.name + ci.description);
-       
-       // 重复检测
-       const exist = S.cards.find(x => x.name === ci.name || x.hash === hashCandidate);
-       if(exist) continue;
-       
-       document.getElementById('busyBar').style.width = ((i/total)*100)+'%';
-       document.getElementById('busySub').textContent = `正在拉取：${ci.name}`;
-       
-       // 2. 修正图片路径：酒馆的角色源卡图片实际上存放在 /characters/ 静态目录下
-       try {
-         const avatarResp = await fetch(tavernProxy + '/characters/' + ci.avatar);
-         if(!avatarResp.ok) throw new Error("图片未找到");
-         
-         const avatarBlob = await avatarResp.blob();
-         
-         // ---- 新增：强制解包下载图片的 EXIF 原始设定 ----
-         const buffer = await avatarBlob.arrayBuffer();
-         let meta = {};
-         const charaStr = extractExifMetadata(buffer, 'chara');
-         if(charaStr) {
-             try {
-                 const decoded = atob(charaStr); 
-                 const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
-                 meta = parseTavernJson(textData) || {};
-             } catch (e) {
-                 meta = parseTavernJson(charaStr) || {};
-             }
-         }
-
-         const reader = new FileReader();
-         const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(new Blob([buffer])); });
-         
-         // 融合 EXIF 数据与接口摘要，EXIF 优先级最高
-         const charData = ci.data || ci; 
-         const finalDesc = meta.description || charData.description || ci.description || "";
-         const newCard = {
-            id: 'c_' + uuid(),
-            hash: hashCandidate,
-            name: meta.name || ci.name,
-            description: finalDesc,
-            personality: meta.personality || charData.personality || ci.personality || "",
-            first_mes: meta.first_mes || charData.first_mes || ci.first_mes || "",
-            mesExample: meta.mes_example || charData.mes_example || ci.mes_example || "",
-            note: meta.creator_notes || charData.creator_notes || charData.note || ci.creator_notes || "",
-            originalDataUrl: base64Str,
-            thumb: await genThumb(base64Str, 400),
-            fileType: 'image/png',
-            fileSize: avatarBlob.size,
-            importedAt: Date.now(),
-            section: S.sections[0],
-            tags: meta.tags || ci.tags || charData.tags || [],
-            charCount: finalDesc.length,
-            groupId: ''
-         };
-         await dbP('cards', newCard);
-         imported++;
-       } catch(e) { console.warn("跳过无图像的卡片:", ci.avatar); }
+    _tavernPullList = [];
+    document.getElementById('busySub').textContent = `正在与本地哈希进行指纹比对...`;
+    
+    for(let i=0; i<list.length; i++) {
+        const ci = list[i];
+        document.getElementById('busyBar').style.width = ((i/list.length)*100)+'%';
+        const hashCandidate = await asyncHash(ci.name + ci.description);
+        const exist = S.cards.find(x => x.name === ci.name || x.hash === hashCandidate);
+        _tavernPullList.push({
+            rawData: ci, name: ci.name, avatar: ci.avatar, isNew: !exist, localId: exist ? exist.id : null
+        });
     }
     
-    await loadCardsLightweight(); renderAll();
-    alert(`拉取完成！共新导入 ${imported} 张卡片。`);
-  } catch(e) {
-    alert("拉取异常：" + e.message);
-  } finally { hideBusy(); }
+    hideBusy(); renderTavernPullUI(); openModal('tavernPullModal');
+  } catch(e) { hideBusy(); alert("拉取异常：" + e.message); }
+}
+
+function renderTavernPullUI() {
+    const listEl = document.getElementById('tpList');
+    if(!_tavernPullList.length) { listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:12px;">酒馆里目前没有卡片</div>'; return; }
+    listEl.innerHTML = _tavernPullList.map((c, idx) => `
+        <label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--bd2); cursor:pointer; transition:background .2s;">
+            <input type="checkbox" class="tp-checkbox" data-idx="${idx}" ${c.isNew ? 'checked' : ''} style="margin-right:12px; width:16px; height:16px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:var(--p3); margin-right:12px; overflow:hidden; border:1px solid var(--bd);">
+                <img src="${tavernProxy}/characters/${c.avatar}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'">
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:13px; font-weight:bold; color:var(--ink);">${esc(c.name)}</div>
+                <div style="font-size:10px; margin-top:2px; ${c.isNew ? 'color:var(--gold);' : 'color:var(--ink3);'}">${c.isNew ? '✨ 本地未收录 (新卡)' : '✓ 本地已存在'}</div>
+            </div>
+        </label>
+    `).join('');
+}
+
+function tpCheckSmart() { document.querySelectorAll('.tp-checkbox').forEach(cb => { cb.checked = _tavernPullList[cb.dataset.idx].isNew; }); }
+function tpCheckAll() { document.querySelectorAll('.tp-checkbox').forEach(cb => cb.checked = true); }
+function tpCheckNone() { document.querySelectorAll('.tp-checkbox').forEach(cb => cb.checked = false); }
+
+async function executeTavernPull() {
+    const selectedIdxs = Array.from(document.querySelectorAll('.tp-checkbox:checked')).map(cb => parseInt(cb.dataset.idx));
+    if(!selectedIdxs.length) return showToast('未勾选任何卡片');
+    
+    closeModal('tavernPullModal'); showBusy('正在拉取', '准备就绪...', 0);
+    let pullOk = 0;
+    for(let i=0; i<selectedIdxs.length; i++) {
+        const target = _tavernPullList[selectedIdxs[i]]; const ci = target.rawData;
+        document.getElementById('busySub').textContent = `正在拉取 (${i+1}/${selectedIdxs.length}): ${ci.name}`;
+        document.getElementById('busyBar').style.width = ((i/selectedIdxs.length)*100)+'%';
+        try {
+             const avatarResp = await fetch(tavernProxy + '/characters/' + ci.avatar);
+             if(!avatarResp.ok) throw new Error();
+             const avatarBlob = await avatarResp.blob(); const buffer = await avatarBlob.arrayBuffer();
+             
+             let meta = {}; const charaStr = extractExifMetadata(buffer, 'chara');
+             if(charaStr) {
+                 try {
+                     const decoded = atob(charaStr); 
+                     const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
+                     meta = parseTavernJson(textData) || {};
+                 } catch (e) { meta = parseTavernJson(charaStr) || {}; }
+             }
+
+             const reader = new FileReader();
+             const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(new Blob([buffer])); });
+             
+             const charData = ci.data || ci; const finalDesc = meta.description || charData.description || ci.description || "";
+             const finalMeta = (meta && Object.keys(meta).length > 0) ? meta : (ci.data || ci || {});
+             const dlgs = [];
+             if(finalMeta.mes_example) dlgs.push(finalMeta.mes_example);
+             if(finalMeta.first_mes) dlgs.push(finalMeta.first_mes);
+             if(finalMeta.alternate_greetings && Array.isArray(finalMeta.alternate_greetings)) finalMeta.alternate_greetings.forEach(g => dlgs.push(g));
+             
+             let wbEntries = [];
+             if(finalMeta.character_book && finalMeta.character_book.entries) {
+               wbEntries = finalMeta.character_book.entries.map(e => ({
+                 name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (e.keys || ''),
+                 content: e.content || '',
+                 position: e.position !== undefined ? e.position : 0,
+                 role: e.role !== undefined ? e.role : 0,
+                 depth: e.depth !== undefined ? e.depth : 4,
+                 order: e.order !== undefined ? e.order : (e.insertion_order !== undefined ? e.insertion_order : 100),
+                 probability: e.probability !== undefined ? e.probability : 100,
+                 constant: e.constant !== undefined ? e.constant : (e.constant_enabled !== undefined ? e.constant_enabled : false),
+                 enabled: e.enabled !== undefined ? e.enabled : true,
+                 selective: e.selective !== undefined ? e.selective : true
+               }));
+             } else if (finalMeta.world_info && typeof finalMeta.world_info === 'object') {
+
+
+               wbEntries = Object.values(finalMeta.world_info).map(e => ({ keys: (e.keys || e.key || []).join?.(', ') || '', content: e.content || e.value || '' }));
+             }
+
+             let pres = []; const promptArr = finalMeta.prompts || (finalMeta.prompt_order && finalMeta.prompts);
+             if(Array.isArray(promptArr)) promptArr.forEach(p => { if(p && (p.name || p.identifier)) pres.push({name: '▸ ' + (p.name || p.identifier), content: String(p.content || p.text || p.value || p.prompt || p.message || '')}) });
+             const rx = finalMeta.regex_scripts || finalMeta.scripts;
+             if(Array.isArray(rx)) rx.forEach(s => { if(s && (s.scriptName || s.name)) pres.push({name: '⟢ ' + (s.scriptName || s.name), content: s.replaceString || s.replace || s.findRegex || s.content || ''}) });
+
+             const newCard = {
+                id: target.localId || ('c_' + uuid()), hash: await asyncHash(ci.name + finalDesc),
+                name: meta.name || ci.name, description: finalDesc,
+                personality: meta.personality || charData.personality || ci.personality || "",
+                first_mes: meta.first_mes || charData.first_mes || ci.first_mes || "",
+                mesExample: meta.mes_example || charData.mes_example || ci.mes_example || "",
+                note: meta.creator_notes || charData.creator_notes || charData.note || ci.creator_notes || "",
+                originalDataUrl: base64Str, thumb: await genThumb(base64Str, 400),
+                fileType: 'image/png', fileSize: avatarBlob.size, importedAt: Date.now(),
+                section: S.sections[0], tags: meta.tags || ci.tags || charData.tags || [],
+                charCount: finalDesc.length, groupId: '', dialogEntries: dlgs, worldBookEntries: wbEntries, presetEntries: pres
+             };
+             
+             if (target.localId) await dbD('cards', target.localId);
+             await dbP('cards', newCard); pullOk++;
+        } catch(ex) {}
+    }
+    
+    hideBusy(); await loadCardsLightweight(); renderAll();
+    showToast(`拉取完毕！成功处理 ${pullOk} 张卡片。`);
 }
 
 // ============================================================
@@ -1910,11 +2302,23 @@ async function startImport() {
       // [修复] 补全 ArrayBuffer 读取
       const buffer = await file.arrayBuffer(); 
 
-      if (ext === 'png') {
-        const charaStr = extractExifMetadata(buffer, 'chara');
-        if(charaStr) {
-           try {
-               // 尝试标准的 Base64 解析
+      // 辅助函数：前端轻量静默压缩图像
+      const silentCompress = (base64Src, maxW = 1200) => new Promise(res => {
+        const img = new Image();
+        img.onload = () => {
+          if (img.width <= maxW) return res(base64Src);
+          const cvs = document.createElement('canvas'); const ctx = cvs.getContext('2d');
+          const scale = maxW / img.width; cvs.width = maxW; cvs.height = img.height * scale;
+          ctx.drawImage(img, 0, 0, cvs.width, cvs.height); res(cvs.toDataURL('image/jpeg', 0.86));
+        };
+        img.onerror = () => res(base64Src); img.src = base64Src;
+          });
+          
+          if (ext === 'png') {
+            const charaStr = extractExifMetadata(buffer, 'chara');
+            if(charaStr) {
+               try {
+                   // 尝试标准的 Base64 解析
                const decoded = atob(charaStr); 
                textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
                meta = parseTavernJson(textData);
@@ -1925,14 +2329,25 @@ async function startImport() {
            }
         }
         base64 = bufToBase64(buffer, 'image/png');
+        if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
       } else if (ext === 'webp') {
         base64 = bufToBase64(buffer, 'image/webp');
+        if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
       } else if (ext === 'json') {
         textData = new TextDecoder().decode(buffer);
         meta = JSON.parse(textData);
+      } else if (ext === 'txt') { // 补回 TXT 纯文本解析
+        textData = new TextDecoder().decode(buffer);
+        meta = { name: file.name.replace(/\.[^/.]+$/, ''), description: textData, tags: [] };
+      } else if (ext === 'docx') { // ✨ 补回 DOCX 极简解析
+        try {
+          textData = await parseDocx(buffer);
+          meta = { name: file.name.replace(/\.[^/.]+$/, ''), description: textData, tags: [] };
+          file.type = 'DOCX';
+        } catch(e) {
+          meta = { name: file.name.replace(/\.[^/.]+$/, ''), description: '[DOCX 解析失败: ' + e.message + ']', tags: [] };
+        }
       }
-      
-      if (!meta && !base64) throw new Error('无法解析文件信息');
       if (!meta) meta = { name: file.name.replace(/\.[^/.]+$/, ''), description: '', tags: [] };
       
       // 基于文本或图像哈希排重
@@ -1946,16 +2361,62 @@ async function startImport() {
       
       const thumb = base64 ? await genThumb(base64, 400) : null;
       
+      // --- 修复：重新引入深层数据提取逻辑 ---
+      const dlgs = [];
+      if(meta.mes_example) dlgs.push(meta.mes_example);
+      if(meta.first_mes) dlgs.push(meta.first_mes);
+      if(meta.alternate_greetings && Array.isArray(meta.alternate_greetings)) {
+          meta.alternate_greetings.forEach(g => dlgs.push(g));
+      }
+
+      let wbEntries = [];
+            if(meta.character_book && meta.character_book.entries) {
+        const entriesArr = Array.isArray(meta.character_book.entries) ? meta.character_book.entries : Object.values(meta.character_book.entries);
+        wbEntries = entriesArr.map(e => ({
+          name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (Array.isArray(e.key) ? e.key.join(', ') : (e.keys || e.key || '')),
+          content: e.content || '',
+          // 完美留存原生世界书的高级开关状态状态
+          position: e.position !== undefined ? e.position : 0,
+          role: e.role !== undefined ? e.role : 0,
+          depth: e.depth !== undefined ? e.depth : 4,
+          order: e.order !== undefined ? e.order : (e.insertion_order !== undefined ? e.insertion_order : 100),
+          probability: e.probability !== undefined ? e.probability : 100,
+          constant: e.constant !== undefined ? e.constant : (e.constant_enabled !== undefined ? e.constant_enabled : false),
+          enabled: e.enabled !== undefined ? e.enabled : true,
+          selective: e.selective !== undefined ? e.selective : true
+        }));
+      } else if (meta.world_info && typeof meta.world_info === 'object') {
+        wbEntries = Object.values(meta.world_info).map(e => ({
+          keys: (e.keys || e.key || []).join?.(', ') || '',
+          content: e.content || e.value || ''
+        }));
+      }
+
+      let pres = [];
+      const promptArr = meta.prompts || (meta.prompt_order && meta.prompts);
+      if(Array.isArray(promptArr)) {
+          promptArr.forEach(p => { if(p && (p.name || p.identifier)) pres.push({name: '▸ ' + (p.name || p.identifier), content: String(p.content || p.text || p.value || p.prompt || p.message || '')}) });
+      }
+      const rx = meta.regex_scripts || meta.scripts;
+      if(Array.isArray(rx)) {
+          rx.forEach(s => { if(s && (s.scriptName || s.name)) pres.push({name: '⟢ ' + (s.scriptName || s.name), content: s.replaceString || s.replace || s.findRegex || s.content || ''}) });
+      }
+      // --- 提取结束 ---
+
       const card = {
         id: 'c_' + uuid(), hash,
         name: meta.name || file.name,
-		description: (meta.description || '') + 
+        description: (meta.description || '') + 
                (meta.personality ? '\n\n【性格】\n' + meta.personality : '') + 
                (meta.scenario ? '\n\n【场景】\n' + meta.scenario : ''),
         note: '', fileType: file.type || ext,
         fileSize: file.size, importedAt: Date.now(), section: targetSec, favorite: false, groupId: '',
         tags: meta.tags || (!meta.name?['无数据']:''), subtags: [], charCount: cCount,
-        originalDataUrl: base64, thumb: thumb, mesExample: meta.mes_example || ''
+        originalDataUrl: base64, thumb: thumb, mesExample: meta.mes_example || '',
+        // 挂载提取的数据数组
+        dialogEntries: dlgs,
+        worldBookEntries: wbEntries,
+        presetEntries: pres
       };
 
       const dup = S.cards.find(c => c.hash === hash || (c.name === card.name && cCount === c.charCount));
@@ -2059,11 +2520,12 @@ async function loadJSZip() {
 async function exportCard(id) {
   const c = await dbG('cards', id); if (!c) return;
   if (!c.originalDataUrl) {
-    // 纯文本 JSON 兜底
     const b = new Blob([JSON.stringify(c, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = c.name + '.json'; a.click(); return;
+    dlB(b, c.name + '.json'); return;
   }
-  const a = document.createElement('a'); a.href = c.originalDataUrl; a.download = c.name + (c.fileType.includes('png') ? '.png' : '.webp'); a.click();
+  const res = await fetch(c.originalDataUrl);
+  const blob = await res.blob();
+  dlB(blob, c.name + (c.fileType.includes('png') ? '.png' : '.webp'));
 }
 
 async function exportFolder(gid) {
@@ -2083,7 +2545,7 @@ async function exportFolder(gid) {
     }
   }
   zip.generateAsync({ type: 'blob' }).then(content => {
-    const a = document.createElement('a'); a.href = URL.createObjectURL(content); a.download = `[归档]${g.name}.zip`; a.click(); hideBusy();
+    dlB(content, `[归档]${g.name}.zip`); hideBusy();
   });
 }
 
@@ -2094,35 +2556,92 @@ async function exportAllData() {
     const all = await dbA('cards');
     const dump = { version: 4, timestamp: Date.now(), meta: { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib }, cards: all };
     const b = new Blob([JSON.stringify(dump)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `Kaku_Backup_${new Date().toISOString().slice(0,10)}.json`; a.click();
+    dlB(b, `Kaku_Backup_${new Date().toISOString().slice(0,10)}.json`);
   } catch(e) { alert("导出失败"); } finally { hideBusy(); }
 }
 
-function exportOriginals() {
-  alert('即将开始逐个下载，若系统拦截请允许下载多个文件。建议不要超过 20 个，否则浏览器可能假死。');
-  S.cards.forEach(c => exportCard(c.id));
-}
-
 function triggerRestore() {
-  const i = document.getElementById('restoreInput'); i.onchange = e => {
+  const i = document.getElementById('restoreInput'); i.onchange = async e => {
     if(!e.target.files.length) return;
-    const f = e.target.files[0]; const reader = new FileReader();
-    reader.onload = async ev => {
-      showBusy('正在恢复数据', '正在写入底层数据库...', 0.5);
-      try {
-        const data = JSON.parse(ev.target.result);
-        if(!data.cards) throw new Error('无效的备份文件');
-        await dbC('cards');
-        for(let x of data.cards) await dbP('cards', x);
-        if(data.meta) {
-           if(data.meta.sections) dbP('meta', {key:'sections',value:data.meta.sections});
-           if(data.meta.groups) dbP('meta', {key:'groups',value:data.meta.groups});
-           if(data.meta.subTagLib) dbP('meta', {key:'subTagLib',value:data.meta.subTagLib});
+    const file = e.target.files[0];
+    if(!confirm('恢复备份将合并数据，确定？')) return;
+    showBusy('正在恢复数据', '正在分块读取文件防溢出...', 0.1);
+    
+    try {
+      const dec = new TextDecoder('utf-8');
+      const CHUNK = 1 << 20; // 1MB 内存块
+      let offset = 0, buf = '', scanPos = 0, headParsed = false;
+      let inStr = false, esc = false, depth = 0, objStart = -1;
+      let added = 0, seen = 0;
+      let total = Math.max(1, Math.round(file.size / 3000));
+      
+      async function nextChunk() {
+        if(offset >= file.size) return null;
+        const slice = file.slice(offset, Math.min(offset + CHUNK, file.size));
+        offset += CHUNK;
+        return dec.decode(await slice.arrayBuffer(), {stream: offset < file.size});
+      }
+      
+      async function processBuf() {
+        while(scanPos < buf.length) {
+          const ch = buf[scanPos];
+          if(inStr) { if(esc) esc=false; else if(ch==='\\') esc=true; else if(ch==='"') inStr=false; }
+          else {
+            if(ch==='"') inStr=true;
+            else if(ch==='{') { if(depth===0) objStart=scanPos; depth++; }
+            else if(ch==='}') {
+              depth--;
+              if(depth===0 && objStart>=0) {
+                const objStr = buf.slice(objStart, scanPos+1);
+                try {
+                  const c = JSON.parse(objStr); seen++;
+                  if(c && c.id) { const ex = await dbG('cards', c.id); if(!ex) { await dbP('cards', c); added++; } }
+                  document.getElementById('busySub').textContent = `正在写入: ${c.name || '未知'}`;
+                  document.getElementById('busyBar').style.width = Math.min(100, (seen / total) * 100) + '%';
+                } catch(e) {}
+                buf = buf.slice(scanPos+1); scanPos=0; objStart=-1;
+                // 强制让出主线程，洗掉内存碎片
+                await new Promise(r => setTimeout(r, 0));
+                continue;
+              }
+            }
+          }
+          scanPos++;
         }
-        await init(); hideBusy(); showToast('恢复成功！'); closeModal('settingsModal');
-      } catch(err) { hideBusy(); alert("恢复失败："+err.message); }
-    };
-    reader.readAsText(f);
+      }
+      
+      while(true) {
+        const text = await nextChunk(); if(text === null) break;
+        buf += text;
+        if(!headParsed) {
+          const idx = buf.indexOf('"cards":'); if(idx === -1) continue;
+          let headStr = buf.slice(0, idx).replace(/,\s*$/, '');
+          try {
+            const tmp = JSON.parse(headStr + '}');
+            if(tmp.count) total = tmp.count;
+            if(tmp.sections) { S.sections = [...new Set([...S.sections, ...tmp.sections])]; await dbP('meta', {key:'sections', value:S.sections}); }
+            if(tmp.groups) { const ids = new Set(S.groups.map(g=>g.id)); tmp.groups.forEach(g => { if(!ids.has(g.id)) S.groups.push(g); }); await dbP('meta', {key:'groups', value:S.groups}); }
+            if(tmp.subTagLib) { 
+               for(const sec of Object.keys(tmp.subTagLib)) {
+                  if(!S.subTagLib[sec]) S.subTagLib[sec] = [];
+                  S.subTagLib[sec] = [...new Set([...S.subTagLib[sec], ...(tmp.subTagLib[sec] || [])])];
+               }
+               await dbP('meta', {key:'subTagLib', value:S.subTagLib});
+            }
+          } catch(e) {}
+          buf = buf.slice(buf.indexOf('[', idx) + 1); scanPos = 0; headParsed = true;
+        }
+        if(headParsed) await processBuf();
+      }
+      if(headParsed) await processBuf();
+      
+      showBusy('整理中', '正在重载列表...', 0.9);
+      await loadCardsLightweight();
+      renderAll();
+      closeModal('settingsModal');
+      hideBusy();
+      showToast(`恢复成功！新增 ${added} 张`);
+    } catch(err) { hideBusy(); alert("恢复失败: " + err.message); }
   };
   i.click();
 }
@@ -2147,16 +2666,44 @@ function batchSelectAll() {
   document.getElementById('bbCnt').textContent = '已选 ' + S.selectedIds.size; renderGrid(); showToast('全选此区');
 }
 
-async function openBatchTag(type) {
+function openBatchTag(type) {
   if(!S.selectedIds.size) return showToast('请先选择');
-  const t = prompt(`输入要批量追加的${type==='main'?'主':'小'}标签名：`); if(!t) return;
-  for(let id of S.selectedIds) {
-    let f = await dbG('cards', id);
-    if(type==='main'){ if(!f.tags) f.tags=[]; if(!f.tags.includes(t)) f.tags.push(t); }
-    else { if(!f.subtags) f.subtags=[]; if(!f.subtags.includes(t)) f.subtags.push(t); }
-    await dbP('cards', f);
+  const isMain = type === 'main';
+  const set = new Set();
+  S.cards.forEach(c => (isMain ? (c.tags||[]) : (c.subtags||[])).forEach(t => set.add(t)));
+  if(!isMain) (S.subTagLib[S.activeSection]||[]).forEach(t => set.add(t));
+  
+  const quick = [...set].sort().map(t => `<button class="tag-quick" onclick="doBatchTag('${type}','${esc(t)}')">${esc(t)}</button>`).join('');
+  
+  document.getElementById('pickTitle').textContent = isMain ? '批量加主标签' : '批量加小标签';
+  document.getElementById('pickBody').innerHTML = `
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:10px">为选中的 ${S.selectedIds.size} 张卡片添加${isMain?'主':'小'}标签：</div>
+    <div class="inp-row">
+      <input type="text" class="inp" id="batchTagInp" placeholder="输入${isMain?'主':'小'}标签..." onkeydown="if(event.key==='Enter') doBatchTag('${type}', this.value)">
+      <button onclick="doBatchTag('${type}', document.getElementById('batchTagInp').value)">添加</button>
+    </div>
+    ${quick ? `<div style="margin-top:9px;font-size:9px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase">QUICK ADD 快捷添加</div><div class="tags-edit-row" style="margin-top:5px">${quick}</div>` : ''}`;
+  openModal('pickModal');
+}
+
+async function doBatchTag(type, val) {
+  const tag = (val||'').trim(); if(!tag) return;
+  const key = type === 'main' ? 'tags' : 'subtags';
+  for(let id of S.selectedIds) { 
+    let full = await dbG('cards', id);
+    if(full && !(full[key]||[]).includes(tag)) {
+       full[key] = [...(full[key]||[]), tag];
+       await dbP('cards', full);
+    }
   }
-  showToast('追加成功'); exitSelectMode(); loadCardsLightweight().then(()=>renderGrid());
+  if(type === 'sub') {
+    const sec = S.cards.find(x => x.id === [...S.selectedIds][0])?.section || S.activeSection;
+    if(!S.subTagLib[sec]) S.subTagLib[sec] = [];
+    if(!S.subTagLib[sec].includes(tag)) { S.subTagLib[sec].push(tag); await dbP('meta', {key:'subTagLib', value:S.subTagLib}); }
+  }
+  closeModal('pickModal'); exitSelectMode();
+  await loadCardsLightweight(); renderFilterBar(); renderGrid();
+  showToast(`批量添加${type==='main'?'主':'小'}标签成功`);
 }
 
 function openBatchGroup() {
@@ -2258,6 +2805,43 @@ function renderSetLists() {
   document.getElementById('groupList').innerHTML = S.groups.map(g=>`<div class="sec-item"><span>${esc(g.name)}</span><button class="sec-del" onclick="delGroup('${g.id}')">✕</button></div>`).join('');
   document.getElementById('sectionList').innerHTML = S.sections.map(s=>`<div class="sec-item"><span>${esc(s)}</span><button class="sec-del" onclick="delSection('${s}')">✕</button></div>`).join('');
   document.getElementById('subTagLib').innerHTML = (S.subTagLib[S.activeSection]||[]).map(t=>`<div class="sec-item"><span style="color:var(--gold)">${esc(t)}</span><button class="sec-del" onclick="delSubTagLib('${t}')">✕</button></div>`).join('');
+  renderMainTagLib(); // 恢复：渲染主标签库
+}
+
+// 恢复：主标签库管理功能
+function ensureMainTagLibCard() {
+  let list = document.getElementById('mainTagLib');
+  if(list) return list;
+  const subWrap = document.getElementById('subTagLib');
+  if(!subWrap) return null;
+  const subCard = subWrap.closest('.set-card');
+  if(!subCard) return null;
+  const card = document.createElement('div');
+  card.className = 'set-card';
+  card.innerHTML = '<h4>Main Tags — 主标签库</h4><div id="mainTagLib"></div><p style="margin-top:5px;font-size:10px;color:var(--ink3)">卡片自带或手动添加的主标签，删除会从所有卡片移除</p>';
+  subCard.parentNode.insertBefore(card, subCard);
+  return document.getElementById('mainTagLib');
+}
+function renderMainTagLib() {
+  const list = ensureMainTagLibCard(); if(!list) return;
+  const sec = S.activeSection;
+  const used = new Set(); S.cards.filter(c=>c.section===sec).forEach(c=>(c.tags||[]).forEach(t=>used.add(t)));
+  const all = [...used].sort();
+  list.innerHTML = !all.length ? '<div style="color:var(--ink3);font-size:12px;padding:4px 0">暂无主标签（当前分区：'+sec+'）</div>' :
+  all.map(t=>`<span class="tag-del" onclick="delMainTagLib('${esc(t)}')">${esc(t)} ×</span>`).join('');
+}
+async function delMainTagLib(tag) {
+  const cnt = S.cards.filter(c=>(c.tags||[]).includes(tag)).length;
+  if(cnt && !confirm(`主标签「${tag}」被 ${cnt} 张卡片使用，删除将从所有卡片移除，确定？`)) return;
+  for(const c of S.cards) {
+    if((c.tags||[]).includes(tag)) {
+      let full = await dbG('cards', c.id);
+      full.tags = full.tags.filter(t=>t!==tag);
+      c.tags = full.tags;
+      await dbP('cards', full);
+    }
+  }
+  renderMainTagLib(); renderTabs(); renderFilterBar(); renderGrid(); showToast('已删除主标签：'+tag);
 }
 
 function addGroup() { const v = document.getElementById('newGroupInput').value.trim(); if(v && !S.groups.find(x=>x.name===v)) { S.groups.push({id:'g_'+Date.now(), name:v}); dbP('meta', {key:'groups', value:S.groups}); renderSetLists(); renderFilterBar(); } }
@@ -2351,29 +2935,123 @@ async function wdFetch(path, opts={}) {
 }
 async function syncPush() {
   if(!webdavConfig.url) return alert('未配置WebDAV');
-  showBusy('推送到云端', '对比差异增量...', 0.3);
+  showBusy('推送到云端', '正在对比差异增量...', 0.1);
   try {
-    const base = 'KakuSync/'; await wdFetch(base, {method:'MKCOL'});
-    const all = await dbA('cards');
-    const dumpStr = JSON.stringify({ meta: { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib }, inventory_hash: all.map(c=>c.id+':'+c.hash).join('|') });
+    const base = 'KakuSync/'; 
+    // 忽略目录已存在的报错
+    await wdFetch(base, {method:'MKCOL'}).catch(() => {}); 
+    
+    // 1. 获取云端现有的 Index，用于对比增量
+    let cloudHashes = {};
+    try {
+      const idxRes = await wdFetch(base + 'Index.json');
+      if(idxRes.ok) {
+        const cloudIdx = await idxRes.json();
+        if(cloudIdx.inventory_hash) {
+          cloudIdx.inventory_hash.split('|').forEach(str => {
+            const [id, hash] = str.split(':');
+            if(id && hash) cloudHashes[id] = hash;
+          });
+        }
+      }
+    } catch(e) { console.log('初次同步或云端无索引'); }
+
+    const keys = await dbKeys('cards');
+    let indexEntries = [];
+    let cardsToUpload = []; // 仅存需要上传的卡片 ID
+    
+    // 2. 建立本地索引并精准比对
+    document.getElementById('busySub').textContent = '比对本地数据...';
+    for (let k of keys) {
+        const c = await dbG('cards', k);
+        indexEntries.push(c.id + ':' + c.hash);
+        // 核心优化：只筛选哈希值不同或云端没有的卡片
+        if(cloudHashes[c.id] !== c.hash) {
+          cardsToUpload.push(c.id);
+        }
+    }
+
+    const dumpStr = JSON.stringify({ meta: { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib }, inventory_hash: indexEntries.join('|') });
     await wdFetch(base+'Index.json', { method:'PUT', body: dumpStr });
     
-    // 省略增量对比环节直接分片上抛：简易示例为不打包
-    for(let i=0; i<all.length; i++) {
-        document.getElementById('busyBar').style.width = ((i/all.length)*100)+'%';
-        // 增量策略：检查服务器ETAG略，这里为了DEMO直接覆写
-        await wdFetch(base + all[i].id + '.json', { method:'PUT', body: JSON.stringify(all[i]) });
+    // 3. 仅上传有差异的卡片，极大提升速度
+    for(let i=0; i<cardsToUpload.length; i++) {
+        document.getElementById('busySub').textContent = `正在上传增量 (${i+1}/${cardsToUpload.length})...`;
+        document.getElementById('busyBar').style.width = ((i/cardsToUpload.length)*100)+'%';
+        const fullCard = await dbG('cards', cardsToUpload[i]); 
+        await wdFetch(base + fullCard.id + '.json', { method:'PUT', body: JSON.stringify(fullCard) });
+        await new Promise(r => setTimeout(r, 10)); // 释放内存与UI线程
     }
     
-    dbP('meta', {key: 'webdavSyncTime', value: Date.now()}); loadWebdavConfig(); showToast('推送到云端完成');
+    dbP('meta', {key: 'webdavSyncTime', value: Date.now()}); 
+    loadWebdavConfig(); 
+    showToast(cardsToUpload.length > 0 ? `增量同步完成！上传了 ${cardsToUpload.length} 张卡片` : '云端已是最新，无需同步');
   } catch(e) { alert("同步失败(跨域CORS?): "+e.message); } finally { hideBusy(); }
 }
+// ============================================================
+// 重写：WebDAV 可视化按需拉取
+// ============================================================
+let _wdPullList = []; 
+
 async function syncPull() {
   if(!webdavConfig.url) return alert('未配置WebDAV');
-  showBusy('从云端拉取', '...', 0.3);
-  // (需解析 PROPFIND 提取文件列表，这里由于篇幅略写核心过程，开发者自行部署)
-  alert('拉取成功模块: 建议您配置好 Nginx Caddy WebDAV 代理后启用');
-  hideBusy();
+  showBusy('请求云端数据', '正在读取远端索引 Index.json...', 0.3);
+  
+  try {
+    const base = 'KakuSync/';
+    const indexRes = await wdFetch(base + 'Index.json', { method: 'GET' });
+    if (!indexRes.ok) throw new Error('找不到云端索引文件，您可能还未向云端推送过数据。');
+    
+    const indexData = await indexRes.json();
+    const cloudHashes = indexData.inventory_hash ? indexData.inventory_hash.split('|') : [];
+    
+    _wdPullList = cloudHashes.filter(h => h.includes(':')).map(entry => {
+        const [id, hash] = entry.split(':');
+        const exist = S.cards.find(c => c.id === id);
+        return { id, hash, isNew: !exist }; 
+    });
+    
+    if(!_wdPullList.length) throw new Error("云端记录为空");
+
+    const listEl = document.getElementById('wdList');
+    listEl.innerHTML = _wdPullList.map((c, idx) => `
+        <label style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--bd2); cursor:pointer;">
+            <input type="checkbox" class="wd-checkbox" data-idx="${idx}" ${c.isNew ? 'checked' : ''} style="margin-right:12px;">
+            <div style="flex:1;">
+                <div style="font-size:12px; font-weight:bold; font-family:monospace; color:var(--ink);">FILE: ${c.id}.json</div>
+                <div style="font-size:10px; color:${c.isNew ? 'var(--gold)' : 'var(--ink3)'};">${c.isNew ? '✨ 本地缺失 (建议恢复)' : '✓ 本地已存在'}</div>
+            </div>
+        </label>
+    `).join('');
+
+    hideBusy(); openModal('webdavPullModal');
+
+  } catch(e) { hideBusy(); alert("拉取异常：" + e.message); }
+}
+
+function wdCheckAll() { document.querySelectorAll('.wd-checkbox').forEach(cb => cb.checked = true); }
+function wdCheckNone() { document.querySelectorAll('.wd-checkbox').forEach(cb => cb.checked = false); }
+
+async function executeWebdavPull() {
+    const selectedIdxs = Array.from(document.querySelectorAll('.wd-checkbox:checked')).map(cb => parseInt(cb.dataset.idx));
+    if(!selectedIdxs.length) return showToast('未勾选任何文件');
+    
+    closeModal('webdavPullModal'); showBusy('正在恢复数据', '...', 0);
+    const base = 'KakuSync/'; let pullOk = 0;
+    
+    for(let i=0; i<selectedIdxs.length; i++) {
+        const target = _wdPullList[selectedIdxs[i]];
+        document.getElementById('busySub').textContent = `正在下载 (${i+1}/${selectedIdxs.length}): ${target.id}.json`;
+        document.getElementById('busyBar').style.width = ((i/selectedIdxs.length)*100)+'%';
+        
+        try {
+             const res = await wdFetch(base + target.id + '.json', { method: 'GET' });
+             if(res.ok) { await dbP('cards', await res.json()); pullOk++; }
+        } catch(ex) { console.warn("下载失败", target.id); }
+    }
+    
+    hideBusy(); await loadCardsLightweight(); renderAll();
+    showToast(`恢复完毕！成功下载 ${pullOk} 个存档。`);
 }
 function autoSyncCheck() {
   if(!webdavConfig.autoSync) return;
@@ -2384,7 +3062,18 @@ function autoSyncCheck() {
 // ============================================================
 // 基础工具集与新手指引弹窗
 // ============================================================
-function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2500); }
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const item = document.createElement('div');
+  item.className = `toast-item ${type}`;
+  item.innerHTML = `<span>${esc(msg)}</span>`;
+  container.appendChild(item);
+  setTimeout(() => {
+    item.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(() => item.remove(), 200);
+  }, 2600);
+}
 function showBusy(tit, sub, prg) { document.getElementById('busyMask').classList.add('show'); document.getElementById('busyTitle').textContent=tit; document.getElementById('busySub').textContent=sub; document.getElementById('busyBar').style.width=(prg*100)+'%'; }
 function hideBusy() { document.getElementById('busyMask').classList.remove('show'); }
 function esc(str) { return String(str).replace(/[&<>'"]/g, t=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t])); }
@@ -2393,6 +3082,44 @@ function fmtSZ(b) { if(!b) return '0 B'; const k=1024, s=['B','KB','MB','GB'], i
 function fmtN(n) { return n>=10000 ? (n/10000).toFixed(1)+'w' : (n>=1000 ? (n/1000).toFixed(1)+'k' : n); }
 function uuid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
+// 恢复：安卓原生下载桥接
+const IS_WEBVIEW = /; wv\)|WebView/i.test(navigator.userAgent || '');
+function asciiName(name) {
+  try {
+    if(!/[^\x00-\xFF]/.test(name)) return name;
+    let s = name;
+    if(window.PinyinLib && window.PinyinLib.isSupported()) s = window.PinyinLib.convertToPinyin(name,'',true);
+    return s.replace(/[^\x20-\x7E]+/g,'').replace(/\s{2,}/g,' ').trim() || 'card';
+  } catch(e) { return 'card'; }
+}
+function dlB(blob, name) {
+  if(window.AndroidDL && typeof AndroidDL.saveBase64 === 'function') {
+    const rd = new FileReader();
+    rd.onload = () => { try { AndroidDL.saveBase64(rd.result.split(',')[1] || '', name); } catch(e) { showToast('保存失败'); } };
+    rd.readAsDataURL(blob);
+    return;
+  }
+  const fn = IS_WEBVIEW ? asciiName(name) : name;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = fn;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// 恢复：旧卡片后台静默生成缩略图
+async function migrateThumbs() {
+  const full = await dbA('cards');
+  let updated = 0;
+  for(const c of full) {
+    if(c.thumb || !c.originalDataUrl) continue;
+    try {
+      const t = await genThumb(c.originalDataUrl, 240);
+      if(t) { c.thumb = t; await dbP('cards', c); updated++; }
+    } catch(e) {}
+  }
+  if(updated) { loadCardsLightweight().then(()=>renderGrid()); showToast('已优化 '+updated+' 张旧卡片缩略图'); }
+}
+
 function openModal(id) { document.getElementById(id).classList.add('show'); document.body.style.overflow = 'hidden'; }
 
 function closeModal(id) { 
@@ -2400,6 +3127,7 @@ function closeModal(id) {
   document.body.style.overflow = ''; 
   if (id === 'detailModal') {
     _currentDetailId = null;
+    document.getElementById('appContainer').classList.remove('fullscreen-detail'); // 关闭时自动退出全屏
     // 触发大屏双栏检测，释放被锁死的 DOM
     if (typeof checkSplitPaneMode === 'function') {
       checkSplitPaneMode();
@@ -2499,7 +3227,7 @@ let importResult = {};
            }
 
            const fd = new FormData();
-           fd.append("avatar", newAvatar);
+           fd.append("avatar_url", newAvatar); // 修复: 批量新卡文本注入
            fd.append("ch_name", c.name || "");
            fd.append("description", c.description || "");
            fd.append("personality", c.personality || "");
@@ -2510,7 +3238,7 @@ let importResult = {};
            await fetch(tavernProxy + '/api/characters/edit', { method: 'POST', body: fd });
          } else {
            const fd = new FormData();
-           fd.append("avatar", existChar.avatar);
+           fd.append("avatar_url", existChar.avatar); // 修复: 批量热更新覆盖
            fd.append("ch_name", c.name || existChar.name || "");
            fd.append("description", c.description ?? existChar.description ?? "");
            fd.append("personality", c.personality ?? existChar.personality ?? "");
@@ -2523,6 +3251,9 @@ let importResult = {};
          }
          success++;
        } catch(e) { fail++; }
+       
+       // 给浏览器留出渲染进度条的时间，防止 UI 假死
+       await new Promise(resolve => setTimeout(resolve, 10)); 
     }
     alert(`批量推送完成！\n✅ 成功: ${success}\n❌ 跳过无图/失败: ${fail}`);
   } catch(e) {
@@ -2574,9 +3305,9 @@ async function syncWithTavern() {
            await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: rawForm });
          } else {
            const fd = new FormData();
-           fd.append("avatar", existChar.avatar);
-           fd.append("ch_name", c.name||""); fd.append("description", c.description??""); 
-           fd.append("personality", c.personality??""); fd.append("first_mes", c.first_mes??""); 
+           fd.append("avatar_url", existChar.avatar); // 修复: 双向同步更新
+           fd.append("ch_name", c.name||""); fd.append("description", c.description??"");
+		   fd.append("personality", c.personality??""); fd.append("first_mes", c.first_mes??""); 
            fd.append("mes_example", c.mesExample??""); fd.append("creator_notes", c.note??"");
            const finalTags = (c.tags && c.tags.length > 0) ? c.tags : existChar.tags;
            if (finalTags && finalTags.length > 0) fd.append("tags", finalTags.join(','));
@@ -2584,6 +3315,8 @@ async function syncWithTavern() {
          }
          pushOk++;
        } catch(e) { pushFail++; }
+       
+       await new Promise(resolve => setTimeout(resolve, 10)); // 防假死
     }
 
     // --- 阶段二：刷新酒馆最新列表，准备拉新卡回库 ---
@@ -2626,20 +3359,70 @@ async function syncWithTavern() {
          const base64Str = await new Promise(res => { reader.onload = ()=>res(reader.result); reader.readAsDataURL(new Blob([buffer])); });
          
          // 融合 EXIF 数据与接口摘要，EXIF 优先级最高
-         const charData = ci.data || ci;
+         const charData = ci.data || ci; 
          const finalDesc = meta.description || charData.description || ci.description || "";
-         
+
+         // --- 修复：提取世界书、预设、对白数据 ---
+         const finalMeta = (meta && Object.keys(meta).length > 0) ? meta : (ci.data || ci || {});
+         const dlgs = [];
+         if(finalMeta.mes_example) dlgs.push(finalMeta.mes_example);
+         if(finalMeta.first_mes) dlgs.push(finalMeta.first_mes);
+         if(finalMeta.alternate_greetings && Array.isArray(finalMeta.alternate_greetings)) {
+             finalMeta.alternate_greetings.forEach(g => dlgs.push(g));
+         }
+         let wbEntries = [];
+                          if(finalMeta.character_book && finalMeta.character_book.entries) {
+               const entriesArr = Array.isArray(finalMeta.character_book.entries) ? finalMeta.character_book.entries : Object.values(finalMeta.character_book.entries);
+               wbEntries = entriesArr.map(e => ({
+                 name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (Array.isArray(e.key) ? e.key.join(', ') : (e.keys || e.key || '')),
+                 content: e.content || '',
+                 position: e.position !== undefined ? e.position : 0,
+                 role: e.role !== undefined ? e.role : 0,
+                 depth: e.depth !== undefined ? e.depth : 4,
+                 order: e.order !== undefined ? e.order : (e.insertion_order !== undefined ? e.insertion_order : 100),
+                 probability: e.probability !== undefined ? e.probability : 100,
+                 constant: e.constant !== undefined ? e.constant : (e.constant_enabled !== undefined ? e.constant_enabled : false),
+                 enabled: e.enabled !== undefined ? e.enabled : true,
+                 selective: e.selective !== undefined ? e.selective : true
+               }));
+             } else if (finalMeta.world_info && typeof finalMeta.world_info === 'object') {
+           wbEntries = Object.values(finalMeta.world_info).map(e => ({
+             keys: (e.keys || e.key || []).join?.(', ') || '',
+             content: e.content || e.value || ''
+           }));
+         }
+         let pres = [];
+         const promptArr = finalMeta.prompts || (finalMeta.prompt_order && finalMeta.prompts);
+         if(Array.isArray(promptArr)) {
+             promptArr.forEach(p => { if(p && (p.name || p.identifier)) pres.push({name: '▸ ' + (p.name || p.identifier), content: String(p.content || p.text || p.value || p.prompt || p.message || '')}) });
+         }
+         const rx = finalMeta.regex_scripts || finalMeta.scripts;
+         if(Array.isArray(rx)) {
+             rx.forEach(s => { if(s && (s.scriptName || s.name)) pres.push({name: '⟢ ' + (s.scriptName || s.name), content: s.replaceString || s.replace || s.findRegex || s.content || ''}) });
+         }
+         // --- 提取结束 ---
+
          const newCard = {
-            id: 'c_' + uuid(), hash: hashCandidate, name: meta.name || ci.name, 
+            id: 'c_' + uuid(),
+            hash: hashCandidate,
+            name: meta.name || ci.name,
             description: finalDesc,
             personality: meta.personality || charData.personality || ci.personality || "",
             first_mes: meta.first_mes || charData.first_mes || ci.first_mes || "",
             mesExample: meta.mes_example || charData.mes_example || ci.mes_example || "",
             note: meta.creator_notes || charData.creator_notes || charData.note || ci.creator_notes || "",
-            originalDataUrl: base64Str, thumb: await genThumb(base64Str, 400),
-            fileType: 'image/png', fileSize: avatarBlob.size, importedAt: Date.now(),
-            section: S.sections[0], tags: meta.tags || ci.tags || charData.tags || [], 
-            charCount: finalDesc.length, groupId: ''
+            originalDataUrl: base64Str,
+            thumb: await genThumb(base64Str, 400),
+            fileType: 'image/png',
+            fileSize: avatarBlob.size,
+            importedAt: Date.now(),
+            section: S.sections[0],
+            tags: meta.tags || ci.tags || charData.tags || [],
+            charCount: finalDesc.length,
+            groupId: '',
+            dialogEntries: dlgs,
+            worldBookEntries: wbEntries,
+            presetEntries: pres
          };
          await dbP('cards', newCard);
          pullOk++;
@@ -2655,6 +3438,314 @@ async function syncWithTavern() {
     alert('双向同步因异常中断: ' + err.message);
   } finally { hideBusy(); }
 }
+// ============================================================
+// ✨ 找回的 DOCX 极简解析引擎 (脱离第三方依赖)
+// ============================================================
+async function parseDocx(buffer){
+  const bytes = new Uint8Array(buffer);
+  const xml = await extractZipEntry(bytes, 'word/document.xml');
+  if(!xml) throw new Error('找不到 document.xml');
+  let txt = xml.replace(/<\/w:p>/g, '\n').replace(/<w:tab\/?>/g, '\t').replace(/<[^>]+>/g, '');
+  txt = txt.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/"/g, '"').replace(/'/g, "'");
+  return txt.trim();
+}
+async function extractZipEntry(bytes, name){
+  const dv = new DataView(bytes.buffer); let i = 0; const nameBytes = new TextEncoder().encode(name);
+  while(i < bytes.length - 4){
+    if(dv.getUint32(i, true) === 0x04034b50){
+      const method = dv.getUint16(i+8, true), compSize = dv.getUint32(i+18, true);
+      const nameLen = dv.getUint16(i+26, true), extraLen = dv.getUint16(i+28, true);
+      const fnStart = i+30, fn = bytes.slice(fnStart, fnStart+nameLen);
+      let match = fn.length === nameBytes.length;
+      if(match) for(let k=0; k<nameBytes.length; k++){ if(fn[k]!==nameBytes[k]){match=false;break} }
+      const dataStart = fnStart + nameLen + extraLen;
+      if(match){
+        const comp = bytes.slice(dataStart, dataStart+compSize);
+        if(method === 0) return new TextDecoder('utf-8').decode(comp);
+        const ds = new DecompressionStream('deflate-raw');
+        const stream = new Blob([comp]).stream().pipeThrough(ds);
+        const out = await new Response(stream).arrayBuffer();
+        return new TextDecoder('utf-8').decode(out);
+      }
+      i = dataStart + compSize;
+    } else { i++; }
+  }
+  return null;
+}
+// ============================================================
+// ✨ 找回的全屏阅读功能组件
+// ============================================================
+let _readCache = {};
+
+window.openRead = async function(key) {
+  let title = '', text = '';
+  let navHtml = '';
+  const sidebar = document.getElementById('readSidebar');
+  
+  // 初始化：默认隐藏侧边栏目录
+  sidebar.style.display = 'none';
+  sidebar.innerHTML = '';
+  
+  if (key.startsWith('dlg_')) {
+      title = '对白示例';
+      text = (window._currentDlgs || [])[dlgIdx || 0] || '';
+      const total = (window._currentDlgs || []).length;
+      if (total > 1) {
+          navHtml = `<div style="display:inline-flex;align-items:center;gap:8px;margin-left:16px;vertical-align:middle;">
+              <button class="expand-btn" id="readDlgP" onclick="navReadDlg(-1)" ${dlgIdx===0?'disabled':''}>◀</button>
+              <span id="readDlgI" style="font-size:11px;color:var(--ink3);letter-spacing:1px;font-family:var(--ss);">${dlgIdx+1} / ${total}</span>
+              <button class="expand-btn" id="readDlgN" onclick="navReadDlg(1)" ${dlgIdx===total-1?'disabled':''}>▶</button>
+          </div>`;
+      }
+  } else if (key.startsWith('desc_')) {
+      const id = key.substring(5);
+      const card = await dbG('cards', id);
+      title = '简介 · ' + (card ? card.name : '');
+      text = card ? (card.description || '') : '';
+  } else if (key.startsWith('wb_')) {
+      const parts = key.split('_'); 
+      const currentWbIdx = parseInt(parts[1]);
+      const cid = parts.slice(2).join('_');
+      const card = await dbG('cards', cid);
+      
+      title = '🌍 世界书阅读面板';
+      text = card.worldBookEntries?.[currentWbIdx]?.content || '';
+      
+      // 核心注入：如果存在多条目，把左侧全屏导航侧边栏展现出来
+      if (card.worldBookEntries && card.worldBookEntries.length > 0) {
+          sidebar.style.display = 'block';
+          sidebar.innerHTML = card.worldBookEntries.map((e, idx) => {
+              const itemTitle = e.keys || '（无标题）';
+              const activeStyle = idx === currentWbIdx ? 'background:var(--ink); color:var(--p); font-weight:bold;' : 'color:var(--ink2);';
+              return `<div style="padding:10px 14px; font-size:12px; cursor:pointer; border-bottom:1px solid var(--bd2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; ${activeStyle}" 
+                   onclick="switchWbFullScreenContent('${cid}', ${idx}, this)">
+                   ${idx + 1}. ${esc(itemTitle)}
+              </div>`;
+          }).join('');
+      }
+  }
+  
+  document.getElementById('readTitle').innerHTML = title + navHtml;
+  document.getElementById('readBody').textContent = text;
+  document.getElementById('readMask').classList.add('show');
+};
+
+// ==========================================
+// 新增：全屏模式下点击目录，无缝切换世界书具体文本
+// ==========================================
+window.switchWbFullScreenContent = async function(cid, idx, clickedElement) {
+    const card = await dbG('cards', cid);
+    if (!card || !card.worldBookEntries?.[idx]) return;
+    
+    // 切换主体文本
+    document.getElementById('readBody').textContent = card.worldBookEntries[idx].content || '';
+    
+    // 高亮切换左侧目录栏项的颜色样式
+    const siblings = clickedElement.parentElement.children;
+    for (let el of siblings) {
+        el.style.background = '';
+        el.style.color = 'var(--ink2)';
+        el.style.fontWeight = 'normal';
+    }
+    clickedElement.style.background = 'var(--ink)';
+    clickedElement.style.color = 'var(--p)';
+    clickedElement.style.fontWeight = 'bold';
+};
+
+// ==========================================
+// 新增：全屏模式下的对白前后切换
+// ==========================================
+window.navReadDlg = function(dir) {
+    const total = (window._currentDlgs || []).length;
+    if (total === 0) return;
+    
+    dlgIdx = Math.max(0, Math.min(total - 1, dlgIdx + dir));
+    document.getElementById('readBody').textContent = window._currentDlgs[dlgIdx] || '';
+    
+    // 更新按钮禁用状态和页码
+    const p = document.getElementById('readDlgP');
+    const n = document.getElementById('readDlgN');
+    const i = document.getElementById('readDlgI');
+    
+    if(p) p.disabled = (dlgIdx === 0);
+    if(n) n.disabled = (dlgIdx === total - 1);
+    if(i) i.textContent = `${dlgIdx+1} / ${total}`;
+    
+    // 隐式同步背后的背景气泡 UI
+    navDlgV4(0);
+};
+
+// ==========================================
+// 新增：世界书设置项自动静默保存
+// ==========================================
+window.updateWbSetting = async function(id, idx, key, val) {
+    let card = S.cards.find(c => c.id === id);
+    if (!card) return;
+    
+    const full = await dbG('cards', id);
+    if (!full || !full.worldBookEntries) return;
+
+    const entry = full.worldBookEntries[idx];
+    if (key === 'pos_role') {
+        const [p, r] = val.split('_').map(Number);
+        entry.position = p;
+        entry.role = r;
+    } else if (key === 'constant') {
+        entry.constant = val;
+    } else if (key === 'enabled') {
+        entry.enabled = val;
+    } else {
+        entry[key] = Number(val);
+        // 为了兼容旧卡和不同标准，同步修改 insertion_order
+        if (key === 'order') entry.insertion_order = Number(val); 
+    }
+
+    card.worldBookEntries = full.worldBookEntries; // 更新内存引用
+    await dbP('cards', full); // 写入 IndexedDB 数据库
+    showToast('设置已保存');
+};
+
+window.closeRead = function() {
+  document.getElementById('readMask').classList.remove('show');
+};
+
+window.changeReadFontSize = function(dir) {
+  const body = document.getElementById('readBody');
+  const currentSize = parseFloat(window.getComputedStyle(body).fontSize) || 14;
+  body.style.fontSize = (currentSize + dir * 2) + 'px';
+};
+
+// ==========================================
+// 新增：右侧详情栏全屏放大
+// ==========================================
+function toggleDetailFullscreen() {
+  const app = document.getElementById('appContainer');
+  app.classList.toggle('fullscreen-detail');
+}
+
+// ==========================================
+// 新增：拖拽调整侧边栏宽度
+// ==========================================
+const resizer = document.getElementById('resizer');
+let isDragging = false;
+if (resizer) {
+  resizer.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; // 防止拖拽时意外选中文本
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    let containerWidth = document.getElementById('appContainer').offsetWidth;
+    let newWidth = containerWidth - e.clientX;
+    
+    // 限制一下最小和最大宽度，防止拖得太小或太大
+    if (newWidth < 300) newWidth = 300;
+    if (newWidth > containerWidth - 350) newWidth = containerWidth - 350;
+    
+    // 实时更新 CSS 变量
+    document.documentElement.style.setProperty('--rp-w', newWidth + 'px');
+  });
+
+  document.addEventListener('mouseup', function(e) {
+    if (isDragging) {
+      isDragging = false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
+}
+
+// ==========================================
+// 世界书关键词 Tag 智能转化与格式修复管理引擎
+// ==========================================
+
+window.updateWbKeysData = async function(id, idx, newKeys) {
+    let card = S.cards.find(c => c.id === id);
+    if (!card) return;
+    const full = await dbG('cards', id);
+    if (!full || !full.worldBookEntries) return;
+    
+    // 安全分流：把真实关键词写入独立字段 actual_keywords，不破坏原本的标题展示！
+    full.worldBookEntries[idx].actual_keywords = newKeys;
+    if (card.worldBookEntries) card.worldBookEntries[idx].actual_keywords = newKeys; 
+    await dbP('cards', full); 
+    
+    const boxEl = document.getElementById(`wb_tags_box_${id}_${idx}`);
+    if(boxEl) {
+       const tagsArray = newKeys.split(/[,，、]+/).map(t => t.trim()).filter(Boolean);
+       boxEl.innerHTML = tagsArray.map((t, idxTag) => 
+          `<span class="wb-tag-chip">${esc(t)} <span class="wb-tag-del" onclick="removeWbTag(event, '${id}', ${idx}, ${idxTag})">✕</span></span>`
+       ).join('');
+    }
+};
+
+window.removeWbTag = function(e, id, idx, tagIdx) {
+    e.stopPropagation();
+    dbG('cards', id).then(full => {
+        const entry = full.worldBookEntries[idx];
+        const keysStr = entry.actual_keywords !== undefined ? entry.actual_keywords : ((!entry.name && entry.keys) ? '' : (entry.keys || ''));
+        const tagsArray = keysStr.split(/[,，、]+/).map(t => t.trim()).filter(Boolean);
+        tagsArray.splice(tagIdx, 1);
+        window.updateWbKeysData(id, idx, tagsArray.join(', '));
+    });
+};
+
+window.addWbTagFromInput = function(id, idx) {
+    const inputEl = document.getElementById(`wb_tag_input_${id}_${idx}`);
+    if (!inputEl) return;
+    const newVal = inputEl.value;
+    if (!newVal.trim()) return;
+    
+    // 一键切割中英文逗号与顿号
+    const newTags = newVal.split(/[,，、]+/).map(t => t.trim()).filter(Boolean);
+    if (!newTags.length) { inputEl.value = ''; return; }
+  
+    dbG('cards', id).then(full => {
+        const entry = full.worldBookEntries[idx];
+        const keysStr = entry.actual_keywords !== undefined ? entry.actual_keywords : ((!entry.name && entry.keys) ? '' : (entry.keys || ''));
+        const tagsArray = keysStr.split(/[,，、]+/).map(t => t.trim()).filter(Boolean);
+        
+        newTags.forEach(t => { if (!tagsArray.includes(t)) tagsArray.push(t); });
+        window.updateWbKeysData(id, idx, tagsArray.join(', '));
+        inputEl.value = ''; // 提交后自动清空
+    });
+};
+
+window.handleWbTagKeyDown = function(e, id, idx) {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        window.addWbTagFromInput(id, idx);
+    } else if (e.key === 'Backspace') {
+        const inputEl = document.getElementById(`wb_tag_input_${id}_${idx}`);
+        if (inputEl.value === '') { 
+           e.preventDefault();
+           dbG('cards', id).then(full => {
+              const entry = full.worldBookEntries[idx];
+              const keysStr = entry.actual_keywords !== undefined ? entry.actual_keywords : ((!entry.name && entry.keys) ? '' : (entry.keys || ''));
+              const tagsArray = keysStr.split(/[,，、]+/).map(t => t.trim()).filter(Boolean);
+              if (tagsArray.length > 0) {
+                 tagsArray.pop();
+                 window.updateWbKeysData(id, idx, tagsArray.join(', '));
+              }
+           });
+        }
+    }
+};
+
+window.fixWbKeys = function(id, idx) {
+    dbG('cards', id).then(full => {
+        const entry = full.worldBookEntries[idx];
+        const keysStr = entry.actual_keywords !== undefined ? entry.actual_keywords : ((!entry.name && entry.keys) ? '' : (entry.keys || ''));
+        const fixed = keysStr.split(/[,，、]+/).map(t => t.trim()).filter(Boolean).join(', ');
+        window.updateWbKeysData(id, idx, fixed).then(() => {
+            showToast('✅ 修复成功');
+        });
+    });
+};
 </script>
 </body>
 </html>
