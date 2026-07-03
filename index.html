@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
 <link rel="manifest" id="pwaManifest" href="">
 
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Ncny-cHh-o3N6NE9DmXEb2CYOARjPWycrEXW0eGm8z570z3B3RnIXV_qaahzD6j0NjQynWkZaJbwt6124O0zGbCWpShAg5lHHCPug1EkeECefOIGmzL29YukOEyY2jFN-LVhhRbIYCB0KefweGdDp2-Odm9fCHk-_323hHeH9hNz2JrhSxJ--axyodCc8BCLSj1ZGM11wRlHyOoRaO61Zumwpn6lRjgQCatXsXeEwoAut6tu2R88emWDihdxEIkdmCCAEswVn98QT5-lYmwkEzCZzVzQroKptyxccK8iVkelE6V7pHfCR3oULvpZ8BZu83a47pi-OjpAFv-iH32WMQ" charset="UTF-8"></script><style>
 /* =======================================
    基础变量与重置 
 ======================================= */
@@ -1986,9 +1986,13 @@ function saveTavernConfig() {
 // ==========================================
 // 【新增】统一核心上传逻辑：向云端发送纯 JSON，彻底告别浏览器端 FormData 跨域崩坏
 // ==========================================
+// ==========================================
+// 【核心修复】统一上传逻辑：向云端发送纯 JSON，Worker 负责转换
+// ==========================================
 async function uploadCardToTavern(c, existChar) {
     if (!c.originalDataUrl) throw new Error("无图像源文件");
 
+    // 1. 先解析图片中的 EXIF 元数据（如果有）
     let meta = {};
     try {
         const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
@@ -1999,11 +2003,16 @@ async function uploadCardToTavern(c, existChar) {
                 const decoded = atob(charaStr);
                 const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
                 meta = parseTavernJson(textData) || {};
-            } catch (e) { meta = parseTavernJson(charaStr) || {}; }
+            } catch (e) { 
+                meta = parseTavernJson(charaStr) || {}; 
+            }
         }
-    } catch(e) {}
+    } catch(e) {
+        console.warn("EXIF 解析失败，将使用卡库数据", e);
+    }
 
-    meta.name = c.name || meta.name || "";
+    // 2. 合并卡库数据（优先级高于 EXIF）
+    meta.name = c.name || meta.name || "未命名";
     meta.description = c.description ?? meta.description ?? "";
     meta.personality = c.personality ?? meta.personality ?? "";
     meta.first_mes = c.first_mes ?? meta.first_mes ?? "";
@@ -2011,31 +2020,42 @@ async function uploadCardToTavern(c, existChar) {
     meta.creator_notes = c.note ?? meta.creator_notes ?? "";
     if (c.tags && c.tags.length > 0) meta.tags = c.tags;
 
-    const payload = { avatar: c.originalDataUrl };
+    // 3. 构造纯 JSON Payload（Worker 会负责转换成 FormData）
+    const payload = {
+        avatar: c.originalDataUrl, // 完整 Base64 带前缀
+        ...meta // 展开所有元数据
+    };
 
+    // 4. 判断是新建还是更新
     if (!existChar) {
+        // 新角色：直接导入
         const res = await fetch(tavernProxy + '/api/characters/import', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error(await res.text());
-    } else {
-        payload.avatar_url = existChar.avatar;
-        payload.ch_name = meta.name;
-        for (let key in meta) {
-            if (["name", "ch_name"].includes(key)) continue;
-            payload[key] = meta[key];
+        
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`导入失败 (${res.status}): ${errorText}`);
         }
+    } else {
+        // 已有角色：热更新设定
+        payload.avatar_url = existChar.avatar; // 保留原头像路径
+        payload.ch_name = meta.name; // 必须字段
+        
         const res = await fetch(tavernProxy + '/api/characters/edit', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error(await res.text());
+        
+        if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(`更新失败 (${res.status}): ${errorText}`);
+        }
     }
 }
-
 // 一键推送至酒馆 (基于新架构)
 async function pushCardToTavern(id) {
   if(!tavernProxy) return alert("请先在设置中配置 Tavern API Proxy!");
@@ -2277,13 +2297,13 @@ async function startImport() {
           ctx.drawImage(img, 0, 0, cvs.width, cvs.height); res(cvs.toDataURL('image/jpeg', 0.86));
         };
         img.onerror = () => res(base64Src); img.src = base64Src;
-          });
+      });
           
-          if (ext === 'png') {
-            const charaStr = extractExifMetadata(buffer, 'chara');
-            if(charaStr) {
-               try {
-                   // 尝试标准的 Base64 解析
+      if (ext === 'png') {
+        const charaStr = extractExifMetadata(buffer, 'chara');
+        if(charaStr) {
+           try {
+               // 尝试标准的 Base64 解析
                const decoded = atob(charaStr); 
                textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
                meta = parseTavernJson(textData);
@@ -2294,10 +2314,12 @@ async function startImport() {
            }
         }
         base64 = bufToBase64(buffer, 'image/png');
-        if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
+        // ❌ 【修复】：彻底禁用 PNG 的静默压缩，防止被转为 JPG 丢失所有角色设定！
+        // if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
       } else if (ext === 'webp') {
         base64 = bufToBase64(buffer, 'image/webp');
-        if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
+        // ❌ 【修复】：彻底禁用 WebP 的静默压缩，原因同上！
+        // if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
       } else if (ext === 'json') {
         textData = new TextDecoder().decode(buffer);
         meta = JSON.parse(textData);
@@ -2335,7 +2357,7 @@ async function startImport() {
       }
 
       let wbEntries = [];
-            if(meta.character_book && meta.character_book.entries) {
+      if(meta.character_book && meta.character_book.entries) {
         const entriesArr = Array.isArray(meta.character_book.entries) ? meta.character_book.entries : Object.values(meta.character_book.entries);
         wbEntries = entriesArr.map(e => ({
           name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (Array.isArray(e.key) ? e.key.join(', ') : (e.keys || e.key || '')),
