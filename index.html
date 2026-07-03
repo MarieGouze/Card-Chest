@@ -2003,7 +2003,6 @@ async function uploadCardToTavern(c, existChar) {
         const buffer = await blob.arrayBuffer();
         rawPngBuffer = buffer; // 关键：保存下来
         const charaStr = extractExifMetadata(buffer, 'chara');
-        const charaStr = extractExifMetadata(buffer, 'chara');
         if(charaStr) {
             try {
                 const decoded = atob(charaStr);
@@ -2035,8 +2034,8 @@ async function uploadCardToTavern(c, existChar) {
 
     // ✅ 调试输出：验证 payload 结构
     console.log('推送 Payload 预览:', {
-        avatarLength: payload.avatar.length,
-        avatarPrefix: payload.avatar.substring(0, 30),
+    avatarLength: payload.avatarBuffer.length,
+    avatarPrefix: JSON.stringify(payload.avatarBuffer.slice(0, 30)),
         name: payload.name
     });
 
