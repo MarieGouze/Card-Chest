@@ -1990,13 +1990,19 @@ function saveTavernConfig() {
 // 【核心修复】统一上传逻辑：向云端发送纯 JSON，Worker 负责转换
 // ==========================================
 async function uploadCardToTavern(c, existChar) {
-    if (!c.originalDataUrl) throw new Error("无图像源文件");
+    // ✅ 核心修复：直接发送原始 PNG 的二进制 ArrayBuffer，保留所有元数据
+    if (!c.originalDataUrl || typeof c.originalDataUrl !== 'string' || !c.originalDataUrl.startsWith('data:image/')) {
+        throw new Error("无效的图像源文件：缺失或格式错误");
+    }
 
     // 1. 先解析图片中的 EXIF 元数据（如果有）
     let meta = {};
+    let rawPngBuffer = null; // 新增：保存原始二进制
     try {
         const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
         const buffer = await blob.arrayBuffer();
+        rawPngBuffer = buffer; // 关键：保存下来
+        const charaStr = extractExifMetadata(buffer, 'chara');
         const charaStr = extractExifMetadata(buffer, 'chara');
         if(charaStr) {
             try {
@@ -2020,11 +2026,19 @@ async function uploadCardToTavern(c, existChar) {
     meta.creator_notes = c.note ?? meta.creator_notes ?? "";
     if (c.tags && c.tags.length > 0) meta.tags = c.tags;
 
-    // 3. 构造纯 JSON Payload（Worker 会负责转换成 FormData）
+        // 3. 🔥 核心修复：直接发送原始 PNG 的 ArrayBuffer，而不是 Base64！
     const payload = {
-        avatar: c.originalDataUrl, // 完整 Base64 带前缀
+        avatarBuffer: Array.from(new Uint8Array(rawPngBuffer)), // 转成普通数组便于 JSON 传输
+        avatarMime: c.fileType || 'image/png',
         ...meta // 展开所有元数据
     };
+
+    // ✅ 调试输出：验证 payload 结构
+    console.log('推送 Payload 预览:', {
+        avatarLength: payload.avatar.length,
+        avatarPrefix: payload.avatar.substring(0, 30),
+        name: payload.name
+    });
 
     // 4. 判断是新建还是更新
     if (!existChar) {
@@ -2056,27 +2070,39 @@ async function uploadCardToTavern(c, existChar) {
         }
     }
 }
-// 一键推送至酒馆 (基于新架构)
+// 一键推送至酒馆 (基于新架构) - 修复版
 async function pushCardToTavern(id) {
   if(!tavernProxy) return alert("请先在设置中配置 Tavern API Proxy!");
-  const c = await dbG('cards', id);
-  if(!c || !c.originalDataUrl) return showToast('此项目无图像源文件，无法推送！');
-  if (!confirm(`准备推送 [${c.name}] 至酒馆？\n(新角色直接导入，已有角色将无损覆盖设定并保留聊天记录)`)) return;
+  
+  // ✅ 核心修复：必须从数据库加载完整卡片数据，而非使用内存中的轻量对象
+  const fullCard = await dbG('cards', id);
+  if(!fullCard || !fullCard.originalDataUrl) {
+    return showToast('此项目无图像源文件，无法推送！', 'error');
+  }
+  
+  if (!confirm(`准备推送 [${fullCard.name}] 至酒馆？\n(新角色直接导入，已有角色将无损覆盖设定并保留聊天记录)`)) return;
 
   showBusy('正在向酒馆发送', 'Cloud API Pushing...', 0.5);
   try {
-    let listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    let listResp = await fetch(tavernProxy + '/api/characters/all', { 
+      method: 'POST', 
+      body: JSON.stringify({}) 
+    }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    
     let list = await listResp.json();
     if (!Array.isArray(list)) list = list.default || Object.values(list);
 
-    const existChar = list.find(card => card.name === c.name);
-    document.getElementById('busySub').textContent = existChar ? `热更新设定：${c.name}` : `纯新卡导入：${c.name}`;
+    const existChar = list.find(card => card.name === fullCard.name);
+    document.getElementById('busySub').textContent = existChar ? `热更新设定：${fullCard.name}` : `纯新卡导入：${fullCard.name}`;
     
-    await uploadCardToTavern(c, existChar);
-    showToast(`推送成功！[${c.name}]`);
+        await uploadCardToTavern(fullCard, existChar);
+    showToast(`✅ 推送成功！[${fullCard.name}] 已注入酒馆`, 'success');
   } catch(e) {
-    alert("推送失败：" + e.message);
-  } finally { hideBusy(); }
+    console.error('推送详细错误:', e);
+    alert(`❌ 推送失败：${e.message}\n\n建议检查：\n1. Worker URL 是否正确\n2. 酒馆是否正常运行\n3. 浏览器控制台是否有跨域报错`);
+  } finally { 
+    hideBusy(); 
+  }
 }
 
 // ============================================================
@@ -3170,29 +3196,51 @@ window.addEventListener('DOMContentLoaded', init);
 // 批量与全局 Tavern 同步功能引擎
 //======================================
 
-// 内部核心函数：执行数组队列的批量推送 (基于新架构)
+// 内部核心函数：执行数组队列的批量推送 (基于新架构) - 修复版
 async function execBatchPushToTavern(idList) {
   if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
   if (!confirm(`准备推送 ${idList.length} 张卡片到酒馆，确定执行？`)) return;
 
   showBusy('批量推送中', '正在获取酒馆目录...', 0.1);
   let success = 0, fail = 0;
+  
   try {
-    let listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(() => fetch(tavernProxy + '/api/characters/all'));
+    let listResp = await fetch(tavernProxy + '/api/characters/all', { 
+      method: 'POST', 
+      body: JSON.stringify({}) 
+    }).catch(() => fetch(tavernProxy + '/api/characters/all'));
+    
     let list = await listResp.json();
     if (!Array.isArray(list)) list = list.default || Object.values(list);
 
     for (let i = 0; i < idList.length; i++) {
        document.getElementById('busyBar').style.width = ((i / idList.length) * 100) + '%';
-       const c = await dbG('cards', idList[i]);
-       if (!c || !c.originalDataUrl) { fail++; continue; }
+       
+       // ✅ 核心修复：从数据库加载完整数据
+       const fullCard = await dbG('cards', idList[i]);
+       if (!fullCard || !fullCard.originalDataUrl) { 
+         fail++; 
+         continue; 
+       }
 
-       document.getElementById('busySub').textContent = `正在推送 (${i+1}/${idList.length}): ${c.name}`;
-       const existChar = list.find(card => card.name === c.name);
-       try { await uploadCardToTavern(c, existChar); success++; } catch(e) { fail++; }
+       document.getElementById('busySub').textContent = `正在推送 (${i+1}/${idList.length}): ${fullCard.name}`;
+       const existChar = list.find(card => card.name === fullCard.name);
+       
+       try { 
+         await uploadCardToTavern(fullCard, existChar); 
+         success++; 
+       } catch(e) { 
+         fail++; 
+       }
     }
+    
     alert(`批量推送完成！\n✅ 成功: ${success}\n❌ 跳过/失败: ${fail}`);
-  } catch(e) { alert("网络请求失败：" + e.message); } finally { hideBusy(); exitSelectMode(); }
+  } catch(e) { 
+    alert("网络请求失败：" + e.message); 
+  } finally { 
+    hideBusy(); 
+    exitSelectMode(); 
+  }
 }
 
 // 供底部多选栏调用的【选中项推送】
