@@ -137,12 +137,13 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 .tree-toggle-ico { font-size: 9px; transition: transform 0.2s; }
 .tree-tag-children.open + .tree-toggle-ico, .open .tree-toggle-ico { transform: rotate(90deg); }
 
-.fsort-wrap{flex-shrink:0;padding:4px 8px 4px 0}
+.fsort-wrap{flex-shrink:0;padding:4px 14px 10px;display:flex;align-items:center;justify-content:space-between;}
 .fchip{flex-shrink:0;padding:2px 9px;border-radius:var(--r);font-size:calc(10px * var(--fs-scale));border:1px solid var(--bd);color:var(--ink3);background:none;cursor:pointer;font-family:var(--sf);letter-spacing:.03em;transition:all .2s; margin-bottom:2px;}
 .fchip.active{background:var(--ink);color:var(--p);border-color:var(--ink)}
 .fchip.fav.active{background:var(--gold);color:#fff;border-color:var(--gold)}
 .fsort{flex-shrink:0;background:var(--p3);border:1px solid var(--bd);color:var(--ink2);border-radius:var(--r);padding:3px 6px;font-size:calc(10px * var(--fs-scale));outline:none;cursor:pointer}
-.statsbar{flex-shrink:0;padding:3px 14px 4px;font-size:calc(10px * var(--fs-scale));color:var(--ink3);letter-spacing:.05em;border-bottom:1px solid var(--bd2)}
+.statsbar{flex-shrink:0;}
+.stats-capsule{display:inline-block;background:var(--p3);border:1px solid var(--bd);border-radius:12px;padding:3px 10px;font-size:calc(10px * var(--fs-scale));color:var(--ink2);letter-spacing:.05em;font-weight:bold;font-family:var(--ss);}
 
 /* =======================================
    虚拟滚动容器与卡片样式 
@@ -694,10 +695,11 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
         <div class="filterbar" id="filterbar"></div>
         <button class="fb-toggle" id="fbToggle" onclick="toggleFilterBar()" title="展开/收起标签">▾</button>
       </div>
-      <div class="fsort-wrap"><select class="fsort" id="fsortSel"></select></div>
+      <<div class="fsort-wrap">
+        <select class="fsort" id="fsortSel"></select>
+        <div class="statsbar" id="statsbar"></div>
+      </div>
     </div>
-
-    <div class="statsbar" id="statsbar"></div>
 
     <div class="main-area" id="mainArea" onscroll="handleScroll()">
       <div class="grid-layout" id="cardGrid" style="position:relative;">
@@ -1354,7 +1356,7 @@ function updateGridAfterSearch() {
   
   const list = vsState.list;
   const tot = list.reduce((a, c) => a + (c.charCount || 0), 0);
-  stats.innerHTML = `<span>${list.length} 张卡片${tot > 0 ? ' — ' + fmtN(tot) + ' 字' : ''}</span>`;
+  stats.innerHTML = `<span class="stats-capsule">${list.length} 张${tot > 0 ? ' — ' + fmtN(tot) + ' 字' : ''}</span>`;
   
   if (!list.length) { document.getElementById('vsSpacer').style.height = '0px'; document.getElementById('vsContent').innerHTML = '<div class="empty-state"><div class="eico">◫</div><p>此处无匹配卡片</p></div>'; return; }
 
@@ -1477,7 +1479,7 @@ function renderFolderView() {
     });
     return;
   }
-  stats.textContent = '文件夹 — 把成套的卡片归到一组，点开整组导出';
+  stats.innerHTML = `<span class="stats-capsule">文件夹 — 把成套的卡片归到一组，点开整组导出</span>`;
   grid.className = 'folder-grid';
   document.getElementById('vsSpacer').style.height = '0px';
   const content = document.getElementById('vsContent'); content.innerHTML = ''; content.style.transform = 'none';
