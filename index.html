@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
 <link rel="manifest" id="pwaManifest" href="">
 
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=Ncny-cHh-o3N6NE9DmXEb2CYOARjPWycrEXW0eGm8z570z3B3RnIXV_qaahzD6j0NjQynWkZaJbwt6124O0zGbCWpShAg5lHHCPug1EkeECefOIGmzL29YukOEyY2jFN-LVhhRbIYCB0KefweGdDp2-Odm9fCHk-_323hHeH9hNz2JrhSxJ--axyodCc8BCLSj1ZGM11wRlHyOoRaO61Zumwpn6lRjgQCatXsXeEwoAut6tu2R88emWDihdxEIkdmCCAEswVn98QT5-lYmwkEzCZzVzQroKptyxccK8iVkelE6V7pHfCR3oULvpZ8BZu83a47pi-OjpAFv-iH32WMQ" charset="UTF-8"></script><style>
+<style>
 /* =======================================
    基础变量与重置 
 ======================================= */
@@ -23,9 +23,10 @@
   --sh:rgba(44,36,22,.10);
   --sf:'Georgia','Noto Serif SC',serif;
   --ss:'Segoe UI',system-ui,sans-serif;
-  --r:3px;
-  --gw:130px; 
-  --fs-scale: 1;
+  --r:12px;
+  --gw:150px; 
+  --fs-scale: 1.10;
+}
 }
 [data-theme="dark"]{
   --p:#1A1612;--p2:#221E18;--p3:#2A2520;--p4:#332E28;
@@ -558,10 +559,9 @@ var UNIHANS = ['\u963F', '\u54CE', '\u5B89', '\u80AE', '\u51F9', '\u516B', '\u63
 var PINYINS = ['A', 'AI', 'AN', 'ANG', 'AO', 'BA', 'BAI', 'BAN', 'BANG', 'BAO', 'BEI', 'BEN', 'BENG', 'BI', 'BIAN', 'BIAO', 'BIE', 'BIN', 'BING', 'BO', 'BU', 'CA', 'CAI', 'CAN', 'CANG', 'CAO', 'CE', 'CEN', 'CENG', 'CHA', 'CHAI', 'CHAN', 'CHANG', 'CHAO', 'CHE', 'CHEN', 'CHENG', 'CHI', 'CHONG', 'CHOU', 'CHU', 'CHUA', 'CHUAI', 'CHUAN', 'CHUANG', 'CHUI', 'CHUN', 'CHUO', 'CI', 'CONG', 'COU', 'CU', 'CUAN', 'CUI', 'CUN', 'CUO', 'DA', 'DAI', 'DAN', 'DANG', 'DAO', 'DE', 'DEN', 'DENG', 'DI', 'DIAN', 'DIAO', 'DIE', 'DING', 'DIU', 'DONG', 'DOU', 'DU', 'DUAN', 'DUI', 'DUN', 'DUO', 'E', 'EI', 'EN', 'ENG', 'ER', 'FA', 'FAN', 'FANG', 'FEI', 'FEN', 'FENG', 'FIAO', 'FO', 'FOU', 'FU', 'GA', 'GAI', 'GAN', 'GANG', 'GAO', 'GE', 'GEI', 'GEN', 'GENG', 'GONG', 'GOU', 'GU', 'GUA', 'GUAI', 'GUAN', 'GUANG', 'GUI', 'GUN', 'GUO', 'HA', 'HAI', 'HAN', 'HANG', 'HAO', 'HE', 'HEI', 'HEN', 'HENG', 'HM', 'HONG', 'HOU', 'HU', 'HUA', 'HUAI', 'HUAN', 'HUANG', 'HUI', 'HUN', 'HUO', 'JI', 'JIA', 'JIAN', 'JIANG', 'JIAO', 'JIE', 'JIN', 'JING', 'JIONG', 'JIU', 'JU', 'JUAN', 'JUE', 'JUN', 'KA', 'KAI', 'KAN', 'KANG', 'KAO', 'KE', 'KEN', 'KENG', 'KONG', 'KOU', 'KU', 'KUA', 'KUAI', 'KUAN', 'KUANG', 'KUI', 'KUN', 'KUO', 'LA', 'LAI', 'LAN', 'LANG', 'LAO', 'LE', 'LEI', 'LENG', 'LI', 'LIA', 'LIAN', 'LIANG', 'LIAO', 'LIE', 'LIN', 'LING', 'LIU', 'LO', 'LONG', 'LOU', 'LU', 'LV', 'LUAN', 'LVE', 'LUN', 'LUO', 'M', 'MA', 'MAI', 'MAN', 'MANG', 'MAO', 'ME', 'MEI', 'MEN', 'MENG', 'MI', 'MIAN', 'MIAO', 'MIE', 'MIN', 'MING', 'MIU', 'MO', 'MOU', 'MU', 'N', 'NA', 'NAI', 'NAN', 'NANG', 'NAO', 'NE', 'NEI', 'NEN', 'NENG', 'NI', 'NIAN', 'NIANG', 'NIAO', 'NIE', 'NIN', 'NING', 'NIU', 'NONG', 'NOU', 'NU', 'NV', 'NUAN', 'NVE', 'NUN', 'NUO', 'O', 'OU', 'PA', 'PAI', 'PAN', 'PANG', 'PAO', 'PEI', 'PEN', 'PENG', 'PI', 'PIAN', 'PIAO', 'PIE', 'PIN', 'PING', 'PO', 'POU', 'PU', 'QI', 'QIA', 'QIAN', 'QIANG', 'QIAO', 'QIE', 'QIN', 'QING', 'QIONG', 'QIU', 'QU', 'QUAN', 'QUE', 'QUN', 'RAN', 'RANG', 'RAO', 'RE', 'REN', 'RENG', 'RI', 'RONG', 'ROU', 'RU', 'RUA', 'RUAN', 'RUI', 'RUN', 'RUO', 'SA', 'SAI', 'SAN', 'SANG', 'SAO', 'SE', 'SEN', 'SENG', 'SHA', 'SHAI', 'SHAN', 'SHANG', 'SHAO', 'SHE', 'SHEN', 'SHENG', 'SHI', 'SHOU', 'SHU', 'SHUA', 'SHUAI', 'SHUAN', 'SHUANG', 'SHUI', 'SHUN', 'SHUO', 'SI', 'SONG', 'SOU', 'SU', 'SUAN', 'SUI', 'SUN', 'SUO', 'TA', 'TAI', 'TAN', 'TANG', 'TAO', 'TE', 'TENG', 'TI', 'TIAN', 'TIAO', 'TIE', 'TING', 'TONG', 'TOU', 'TU', 'TUAN', 'TUI', 'TUN', 'TUO', 'WA', 'WAI', 'WAN', 'WANG', 'WEI', 'WEN', 'WENG', 'WO', 'WU', 'XI', 'XIA', 'XIAN', 'XIANG', 'XIAO', 'XIE', 'XIN', 'XING', 'XIONG', 'XIU', 'XU', 'XUAN', 'XUE', 'XUN', 'YA', 'YAN', 'YANG', 'YAO', 'YE', 'YI', 'YIN', 'YING', 'YO', 'YONG', 'YOU', 'YU', 'YUAN', 'YUE', 'YUN', 'ZA', 'ZAI', 'ZAN', 'ZANG', 'ZAO', 'ZE', 'ZEI', 'ZEN', 'ZENG', 'ZHA', 'ZHAI', 'ZHAN', 'ZHANG', 'ZHAO', 'ZHE', 'ZHEN', 'ZHENG', 'ZHI', 'ZHONG', 'ZHOU', 'ZHU', 'ZHUA', 'ZHUAI', 'ZHUAN', 'ZHUANG', 'ZHUI', 'ZHUN', 'ZHUO', 'ZI', 'ZONG', 'ZOU', 'ZU', 'ZUAN', 'ZUI', 'ZUN', 'ZUO', ''];
 var EXCEPTIONS = {'\u66FE': 'ZENG','\u6C88': 'SHEN','\u55F2': 'DIA','\u78A1': 'ZHOU','\u8052': 'GUO','\u7094': 'QUE','\u86B5': 'KE','\u7809': 'HUA','\u5B24': 'MO','\u5B37': 'MO','\u8E52': 'PAN','\u8E4A': 'XI','\u4E2C': 'PAN','\u9730': 'XIAN','\u8398': 'XIN','\u8C49': 'CHI','\u9967': 'XING','\u7B60': 'JUN','\u957F': 'CHANG','\u5E27': 'ZHEN','\u5CD9': 'SHI','\u90CD': 'NA','\u828E': 'XIONG','\u8C01': 'SHUI'};
 var DICT={PINYINS:PINYINS,UNIHANS:UNIHANS,EXCEPTIONS:EXCEPTIONS};
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 var FIRST_PINYIN_UNIHAN = '\u963F';var LAST_PINYIN_UNIHAN = '\u9FFF';var LATIN = 1;var PINYIN = 2;var UNKNOWN = 3;var supported = null;var COLLATOR = void 0;
 function patchDict(patchers) {if (!patchers) return;if (typeof patchers === 'function') {patchers = [patchers];}if (patchers.forEach) {patchers.forEach(function (p) {typeof p === 'function' && p(DICT);});}}
-function isSupported(force) {if (!force && supported !== null) {return supported;}if ((typeof Intl === 'undefined' ? 'undefined' : _typeof(Intl)) === 'object' && Intl.Collator) {COLLATOR = new Intl.Collator(['zh-Hans-CN', 'zh-CN']);supported = Intl.Collator.supportedLocalesOf(['zh-CN']).length === 1;} else {supported = false;}return supported;}
+function isSupported(force) {if (!force && supported !== null) {return supported;}if (typeof Intl === 'object' && Intl.Collator) {COLLATOR = new Intl.Collator(['zh-Hans-CN', 'zh-CN']);
 function genToken(ch) {var UNIHANS = DICT.UNIHANS;var PINYINS = DICT.PINYINS;var EXCEPTIONS = DICT.EXCEPTIONS;var token = {source: ch};if (ch in EXCEPTIONS) {token.type = PINYIN;token.target = EXCEPTIONS[ch];return token;}var offset = -1;var cmp = void 0;if (ch.charCodeAt(0) < 256) {token.type = LATIN;token.target = ch;return token;} else {cmp = COLLATOR.compare(ch, FIRST_PINYIN_UNIHAN);if (cmp < 0) {token.type = UNKNOWN;token.target = ch;return token;} else if (cmp === 0) {token.type = PINYIN;offset = 0;} else {cmp = COLLATOR.compare(ch, LAST_PINYIN_UNIHAN);if (cmp > 0) {token.type = UNKNOWN;token.target = ch;return token;} else if (cmp === 0) {token.type = PINYIN;offset = UNIHANS.length - 1;}}}token.type = PINYIN;if (offset < 0) {var begin = 0;var end = UNIHANS.length - 1;while (begin <= end) {offset = ~~((begin + end) / 2);var unihan = UNIHANS[offset];cmp = COLLATOR.compare(ch, unihan);if (cmp === 0) {break;}else if (cmp > 0) {begin = offset + 1;}else {end = offset - 1;}}}if (cmp < 0) {offset--;}token.target = PINYINS[offset];if (!token.target) {token.type = UNKNOWN;token.target = token.source;}return token;}
 function parse(str) {if (typeof str !== 'string') {throw new Error('argument should be string.');}if (!isSupported()) {throw new Error('not support Intl or zh-CN language.');}return str.split('').map(function (v) {return genToken(v);});}
 return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: genToken,convertToPinyin: function convertToPinyin(str, separator, lowerCase) {return parse(str).map(function (v) {if (lowerCase && v.type === PINYIN) {return v.target.toLowerCase();}return v.target;}).join(separator || '');}};
@@ -842,11 +842,11 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
       <div class="set-card">
         <h4>UI Settings — 界面设置</h4>
-        <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">网格大小缩放：</div>
-        <input type="range" id="gridZoom" min="90" max="240" value="130" style="width:100%;margin-bottom:10px" oninput="changeGridZoom(this.value)">
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">网格大小缩放：<span id="gridZoomVal" style="font-weight:bold;color:var(--gold);">150</span>px</div>
+        <input type="range" id="gridZoom" min="90" max="240" value="150" style="width:100%;margin-bottom:10px" oninput="changeGridZoom(this.value)">
         
-        <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">全局字号缩放：</div>
-        <input type="range" id="fontScale" min="0.8" max="1.5" step="0.05" value="1" style="width:100%;margin-bottom:10px" oninput="changeFontScale(this.value)">
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">全局字号缩放：<span id="fontScaleVal" style="font-weight:bold;color:var(--gold);">1.10</span>倍</div>
+        <input type="range" id="fontScale" min="0.8" max="1.5" step="0.05" value="1.10" style="width:100%;margin-bottom:10px" oninput="changeFontScale(this.value)">
       </div>
 
       <div class="set-card">
@@ -921,6 +921,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
         从云端读取到了以下备份。你可以单独勾选需要的卡片恢复到本地。
       </div>
       <div class="act-row" style="margin-bottom:10px;">
+        <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="wdCheckSmart()">✨ 智能勾选 (本地缺失)</button>
         <button class="actbtn" onclick="wdCheckAll()">全选</button>
         <button class="actbtn" onclick="wdCheckNone()">全不选</button>
       </div>
@@ -937,6 +938,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 <div class="read-hd">
   <span class="read-title" id="readTitle">—</span>
   <div style="display:flex;gap:5px">
+    <button class="expand-btn" onclick="copyReadText()" style="font-weight:bold; color:var(--gold); border-color:var(--gold);">一键复制</button>
     <button class="expand-btn" onclick="changeReadFontSize(-1)">A-</button>
     <button class="expand-btn" onclick="changeReadFontSize(1)">A+</button>
     <button class="mclose" style="margin-left:8px" onclick="closeRead()">✕</button>
@@ -986,7 +988,7 @@ let S = {
   showFavOnly: false, sort: 'date_desc', layout: 'grid', theme: 'light',
   searchQuery: '', searchScopes: new Set(['name','desc','tags']), cards: [],
   selectMode: false, selectedIds: new Set(), timelineMode: false,
-  folderView: false, openFolderId: null, gridWidth: 130, fontScale: 1
+  folderView: false, openFolderId: null, gridWidth: 130, fontScale: 1.25
 };
 
 // ============================================================
@@ -1117,12 +1119,13 @@ async function openDB() {
     req.onerror = (e) => reject(e.target.error);
   });
 }
-const dbG = (s, k) => new Promise((r, j) => { const q = window.db.transaction(s, 'readonly').objectStore(s).get(k); q.onsuccess = () => r(q.result); q.onerror = e => j(e.target.error); });
-const dbP = (s, o) => new Promise((r, j) => { const q = window.db.transaction(s, 'readwrite').objectStore(s).put(o); q.onsuccess = () => r(); q.onerror = e => j(e.target.error); });
-const dbD = (s, k) => new Promise((r, j) => { const q = window.db.transaction(s, 'readwrite').objectStore(s).delete(k); q.onsuccess = () => r(); q.onerror = e => j(e.target.error); });
-const dbA = (s) => new Promise((r, j) => { const q = window.db.transaction(s, 'readonly').objectStore(s).getAll(); q.onsuccess = () => r(q.result); q.onerror = e => j(e.target.error); });
-const dbC = (s) => new Promise((r, j) => { const q = window.db.transaction(s, 'readwrite').objectStore(s).clear(); q.onsuccess = () => r(); q.onerror = e => j(e.target.error); });
-const dbKeys = (s) => new Promise((r, j) => { const q = window.db.transaction(s, 'readonly').objectStore(s).getAllKeys(); q.onsuccess = () => r(q.result); q.onerror = e => j(e.target.error); });
+async function ensureDB() { try { window.db.transaction('meta', 'readonly'); } catch(e) { if(e.name==='InvalidStateError') await openDB(); } }
+const dbG = async (s, k) => { await ensureDB(); return new Promise((r, j) => { const q = window.db.transaction(s, 'readonly').objectStore(s).get(k); q.onsuccess = () => r(q.result); q.onerror = e => j(e.target.error); }); };
+const dbP = async (s, o) => { await ensureDB(); return new Promise((r, j) => { const q = window.db.transaction(s, 'readwrite').objectStore(s).put(o); q.onsuccess = () => r(); q.onerror = e => j(e.target.error); }); };
+const dbD = async (s, k) => { await ensureDB(); return new Promise((r, j) => { const q = window.db.transaction(s, 'readwrite').objectStore(s).delete(k); q.onsuccess = () => r(); q.onerror = e => j(e.target.error); }); };
+const dbA = async (s) => { await ensureDB(); return new Promise((r, j) => { const q = window.db.transaction(s, 'readonly').objectStore(s).getAll(); q.onsuccess = () => r(q.result); q.onerror = e => j(e.target.error); }); };
+const dbC = async (s) => { await ensureDB(); return new Promise((r, j) => { const q = window.db.transaction(s, 'readwrite').objectStore(s).clear(); q.onsuccess = () => r(); q.onerror = e => j(e.target.error); }); };
+const dbKeys = async (s) => { await ensureDB(); return new Promise((r, j) => { const q = window.db.transaction(s, 'readonly').objectStore(s).getAllKeys(); q.onsuccess = () => r(q.result); q.onerror = e => j(e.target.error); }); };
 
 // ============================================================
 // OOM 极致优化: Blob 超轻量化加载
@@ -1149,6 +1152,7 @@ function lighten(full) {
   
   return {
     id: full.id, 
+    hash: full.hash,
     name: full.name || '未知', 
     section: full.section, 
     importedAt: full.importedAt,
@@ -1201,10 +1205,10 @@ async function init() {
   const mL = await dbG('meta', 'layout'); if (mL) applyLayout(mL.value, false);
   
   const mGw = await dbG('meta', 'gridWidth');
-  if (mGw) { S.gridWidth = parseInt(mGw.value, 10); document.documentElement.style.setProperty('--gw', S.gridWidth + 'px'); const gz = document.getElementById('gridZoom'); if (gz) gz.value = S.gridWidth; }
+  if (mGw) { S.gridWidth = parseInt(mGw.value, 10); document.documentElement.style.setProperty('--gw', S.gridWidth + 'px'); const gz = document.getElementById('gridZoom'); if (gz) gz.value = S.gridWidth; const gzv = document.getElementById('gridZoomVal'); if (gzv) gzv.textContent = S.gridWidth; } else { const gzv = document.getElementById('gridZoomVal'); if (gzv) gzv.textContent = S.gridWidth; }
 
   const mFs = await dbG('meta', 'fontScale');
-  if (mFs) { S.fontScale = parseFloat(mFs.value); document.documentElement.style.setProperty('--fs-scale', S.fontScale); }
+  if (mFs) { S.fontScale = parseFloat(mFs.value); document.documentElement.style.setProperty('--fs-scale', S.fontScale); const fs = document.getElementById('fontScale'); if (fs) fs.value = S.fontScale; const fsv = document.getElementById('fontScaleVal'); if (fsv) fsv.textContent = S.fontScale.toFixed(2); } else { const fs = document.getElementById('fontScale'); if (fs) fs.value = S.fontScale; const fsv = document.getElementById('fontScaleVal'); if (fsv) fsv.textContent = S.fontScale.toFixed(2); }
   
   // 监测大屏双栏
   checkSplitPaneMode();
@@ -1250,8 +1254,8 @@ function applyTheme(t, save=true) {
   if (save) dbP('meta', { key: 'theme', value: t });
 }
 function toggleTheme() { applyTheme(S.theme === 'dark' ? 'light' : 'dark'); }
-function changeGridZoom(val) { const w = parseInt(val, 10); S.gridWidth = w; document.documentElement.style.setProperty('--gw', w + 'px'); dbP('meta', {key:'gridWidth', value: w}); renderGrid(); }
-function changeFontScale(val) { const scale = parseFloat(val); S.fontScale = scale; document.documentElement.style.setProperty('--fs-scale', scale); dbP('meta', {key: 'fontScale', value: scale}); }
+function changeGridZoom(val) { const w = parseInt(val, 10); S.gridWidth = w; document.documentElement.style.setProperty('--gw', w + 'px'); dbP('meta', {key:'gridWidth', value: w}); const el = document.getElementById('gridZoomVal'); if(el) el.textContent = w; renderGrid(); }
+function changeFontScale(val) { const scale = parseFloat(val); S.fontScale = scale; document.documentElement.style.setProperty('--fs-scale', scale); dbP('meta', {key: 'fontScale', value: scale}); const el = document.getElementById('fontScaleVal'); if(el) el.textContent = scale.toFixed(2); }
 
 function toggleFilterBar() {
   const bar = document.getElementById('filterbar'), btn = document.getElementById('fbToggle');
@@ -1855,7 +1859,16 @@ async function openDetail(id) {
   let nt;
   if (na) {
     window.updateNoteActionButtons();
+    
+    // 初始化时先根据内容自动撑开一次高度
+    na.style.height = 'auto'; 
+    na.style.height = (na.scrollHeight) + 'px';
+    
     na.addEventListener('input', () => {
+      // 随着打字，丝滑自动长高
+      na.style.height = 'auto';
+      na.style.height = (na.scrollHeight) + 'px';
+      
       if (na.value !== window._noteLastVal) {
         window._noteHistory.push(window._noteLastVal);
         window._noteFuture = [];
@@ -1969,8 +1982,9 @@ function addTagExe(id) {
 }
 
 // ============================================================
-// 【核心功能】酒馆 TAVERN API 破壁互联 (Cloudflare Worker)
+// 【核心功能】酒馆 TAVERN API 破壁互联 (终极修复版)
 // ============================================================
+
 let tavernProxy = '';
 async function loadTavernConfig() {
   const r = await dbG('meta', 'tavernProxyUrl'); if (r) tavernProxy = r.value;
@@ -1983,124 +1997,113 @@ function saveTavernConfig() {
   showToast('Tavern 云端 API 已连接');
 }
 
-// ==========================================
-// 【新增】统一核心上传逻辑：向云端发送纯 JSON，彻底告别浏览器端 FormData 跨域崩坏
-// ==========================================
-// ==========================================
-// 【核心修复】统一上传逻辑：向云端发送纯 JSON，Worker 负责转换
-// ==========================================
-async function uploadCardToTavern(c, existChar) {
-    // ✅ 核心修复：直接发送原始 PNG 的二进制 ArrayBuffer，保留所有元数据
-    if (!c.originalDataUrl || typeof c.originalDataUrl !== 'string' || !c.originalDataUrl.startsWith('data:image/')) {
-        throw new Error("无效的图像源文件：缺失或格式错误");
-    }
+// 一键推送至酒馆 (单卡推送)
+async function pushCardToTavern(id) {
+  if(!tavernProxy) return alert("请先在设置中配置 Tavern API Proxy!");
 
-    // 1. 先解析图片中的 EXIF 元数据（如果有）
+  const c = await dbG('cards', id);
+  if(!c) return;
+  if(!c.originalDataUrl) return showToast('此项目无图像源文件，暂不支持推送！');
+
+  if (!confirm(`准备将 [${c.name}] 推送至酒馆，确认执行？\n\n(系统会自动检测同名卡片并无损覆盖，保留聊天记录)`)) return;
+
+  showBusy('正在向酒馆发送', 'Cloud API Pushing...', 0.3);
+
+  try {
+    // 1. 获取酒馆现有角色列表，用于排重
+    let listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    let list = await listResp.json();
+    if (!Array.isArray(list)) list = list.default || Object.values(list);
+    const existChar = list.find(card => card.name === c.name);
+
+    // 2. 解析本地 PNG
+    const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
+    const buffer = await blob.arrayBuffer();
     let meta = {};
-    let rawPngBuffer = null; // 新增：保存原始二进制
-    try {
-        const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
-        const buffer = await blob.arrayBuffer();
-        rawPngBuffer = buffer; // 关键：保存下来
-        const charaStr = extractExifMetadata(buffer, 'chara');
-        if(charaStr) {
-            try {
-                const decoded = atob(charaStr);
-                const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
-                meta = parseTavernJson(textData) || {};
-            } catch (e) { 
-                meta = parseTavernJson(charaStr) || {}; 
-            }
+    const charaStr = extractExifMetadata(buffer, 'chara');
+    if(charaStr) {
+        try {
+            const decoded = atob(charaStr);
+            const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
+            meta = parseTavernJson(textData) || {};
+        } catch (e) {
+            meta = parseTavernJson(charaStr) || {};
         }
-    } catch(e) {
-        console.warn("EXIF 解析失败，将使用卡库数据", e);
     }
 
-    // 2. 合并卡库数据（优先级高于 EXIF）
-    meta.name = c.name || meta.name || "未命名";
+    meta.name = c.name || meta.name || "";
     meta.description = c.description ?? meta.description ?? "";
     meta.personality = c.personality ?? meta.personality ?? "";
-    meta.first_mes = c.first_mes ?? meta.first_mes ?? "";
-    meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+    meta.scenario = c.scenario ?? meta.scenario ?? "";
     meta.creator_notes = c.note ?? meta.creator_notes ?? "";
     if (c.tags && c.tags.length > 0) meta.tags = c.tags;
 
-        // 3. 🔥 核心修复：直接发送原始 PNG 的 ArrayBuffer，而不是 Base64！
-    const payload = {
-        avatarBuffer: Array.from(new Uint8Array(rawPngBuffer)), // 转成普通数组便于 JSON 传输
-        avatarMime: c.fileType || 'image/png',
-        ...meta // 展开所有元数据
-    };
-
-    // ✅ 调试输出：验证 payload 结构
-    console.log('推送 Payload 预览:', {
-    avatarLength: payload.avatarBuffer.length,
-    avatarPrefix: JSON.stringify(payload.avatarBuffer.slice(0, 30)),
-        name: payload.name
-    });
-
-    // 4. 判断是新建还是更新
-    if (!existChar) {
-        // 新角色：直接导入
-        const res = await fetch(tavernProxy + '/api/characters/import', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`导入失败 (${res.status}): ${errorText}`);
-        }
+    if (c.dialogEntries && c.dialogEntries.length > 0) {
+        meta.first_mes = c.dialogEntries[0] || "";
+        meta.alternate_greetings = c.dialogEntries.slice(1);
     } else {
-        // 已有角色：热更新设定
-        payload.avatar_url = existChar.avatar; // 保留原头像路径
-        payload.ch_name = meta.name; // 必须字段
-        
-        const res = await fetch(tavernProxy + '/api/characters/edit', {
+        meta.first_mes = c.first_mes || meta.first_mes || "";
+    }
+    meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+
+    if (c.worldBookEntries && c.worldBookEntries.length > 0) {
+        const charBook = meta.character_book || (meta.data ? meta.data.character_book : null) || {};
+        charBook.name = meta.name || charBook.name || "Kaku World";
+        charBook.entries = c.worldBookEntries.map((e, idx) => {
+            let keysStr = e.actual_keywords !== undefined ? e.actual_keywords : (Array.isArray(e.keys) ? e.keys.join(',') : (e.keys || ''));
+            let keysArr = keysStr.split(/[,，、]+/).map(k=>k.trim()).filter(Boolean);
+            return {
+                id: idx, uid: idx, keys: keysArr, secondary_keys: [],
+                comment: e.name || keysStr || "未命名", content: e.content || "",
+                constant: !!e.constant, vectorized: false, selective: e.selective !== false,
+                insertion_order: e.order !== undefined ? Number(e.order) : 100,
+                enabled: e.enabled !== false, position: e.position === 1 ? "after_char" : "before_char",
+                use_regex: true,
+                extensions: {
+                    position: e.position !== undefined ? Number(e.position) : 0, role: e.role !== undefined ? Number(e.role) : 0,
+                    depth: e.depth !== undefined ? Number(e.depth) : 4, probability: e.probability !== undefined ? Number(e.probability) : 100,
+                    prevent_recursion: true, delay_until_recursion: false, display_index: idx, group: "", group_weight: 100
+                }
+            };
+        });
+        meta.character_book = charBook;
+        if (meta.data) meta.data.character_book = charBook;
+    } else {
+        delete meta.character_book;
+        if (meta.data) delete meta.data.character_book;
+    }
+
+    // 核心打包：生成新图片
+    const finalBlob = buildUpdatedPngBlob(c.originalDataUrl, meta);
+    
+    // ✨ 修复重复问题：过滤特殊字符用真名。如果同名存在先删图保聊天记录，如果不存在直接用角色本名。
+    let safeName = c.name.replace(/[\\/:*?"<>|]/g, '');
+    let targetAvatar = existChar ? existChar.avatar : `${safeName}.png`;
+    
+    if (existChar) {
+        document.getElementById('busySub').textContent = `正在清理旧版本...`;
+        await fetch(tavernProxy + '/api/characters/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`更新失败 (${res.status}): ${errorText}`);
-        }
+            body: JSON.stringify({ avatar_url: existChar.avatar })
+        }).catch(e => console.warn(e));
     }
-}
-// 一键推送至酒馆 (基于新架构) - 修复版
-async function pushCardToTavern(id) {
-  if(!tavernProxy) return alert("请先在设置中配置 Tavern API Proxy!");
-  
-  // ✅ 核心修复：必须从数据库加载完整卡片数据，而非使用内存中的轻量对象
-  const fullCard = await dbG('cards', id);
-  if(!fullCard || !fullCard.originalDataUrl) {
-    return showToast('此项目无图像源文件，无法推送！', 'error');
-  }
-  
-  if (!confirm(`准备推送 [${fullCard.name}] 至酒馆？\n(新角色直接导入，已有角色将无损覆盖设定并保留聊天记录)`)) return;
 
-  showBusy('正在向酒馆发送', 'Cloud API Pushing...', 0.5);
-  try {
-    let listResp = await fetch(tavernProxy + '/api/characters/all', { 
-      method: 'POST', 
-      body: JSON.stringify({}) 
-    }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
-    
-    let list = await listResp.json();
-    if (!Array.isArray(list)) list = list.default || Object.values(list);
+    document.getElementById('busySub').textContent = `正在写入新版本...`;
+    const fd = new FormData();
+    fd.append("avatar", finalBlob, targetAvatar);
+    fd.append("file_type", "png");
+    fd.append("preserved_name", targetAvatar);
 
-    const existChar = list.find(card => card.name === fullCard.name);
-    document.getElementById('busySub').textContent = existChar ? `热更新设定：${fullCard.name}` : `纯新卡导入：${fullCard.name}`;
-    
-        await uploadCardToTavern(fullCard, existChar);
-    showToast(`✅ 推送成功！[${fullCard.name}] 已注入酒馆`, 'success');
+    const importResp = await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: fd });
+    if (!importResp.ok) throw new Error(await importResp.text());
+
+    showToast(`📝无损推送成功！[${c.name}]的世界书已同步且无重复。`);
+
   } catch(e) {
-    console.error('推送详细错误:', e);
-    alert(`❌ 推送失败：${e.message}\n\n建议检查：\n1. Worker URL 是否正确\n2. 酒馆是否正常运行\n3. 浏览器控制台是否有跨域报错`);
-  } finally { 
-    hideBusy(); 
+    alert("网络通讯或覆盖失败\n错误原因：" + e.message);
+  } finally {
+    hideBusy();
   }
 }
 
@@ -2245,7 +2248,7 @@ async function executeTavernPull() {
 const CHUNK_TEXT = 1952807028;
 let pendFiles = [];
 function openImport() {
-  if (typeof pendFiles !== 'undefined') pendFiles = [];
+  pendFiles = [];
   document.getElementById('progBox').style.display = 'none';
   document.getElementById('dupList').innerHTML = '';
   document.getElementById('fileInput').value = '';
@@ -2322,13 +2325,13 @@ async function startImport() {
           ctx.drawImage(img, 0, 0, cvs.width, cvs.height); res(cvs.toDataURL('image/jpeg', 0.86));
         };
         img.onerror = () => res(base64Src); img.src = base64Src;
-      });
+          });
           
-      if (ext === 'png') {
-        const charaStr = extractExifMetadata(buffer, 'chara');
-        if(charaStr) {
-           try {
-               // 尝试标准的 Base64 解析
+          if (ext === 'png') {
+            const charaStr = extractExifMetadata(buffer, 'chara');
+            if(charaStr) {
+               try {
+                   // 尝试标准的 Base64 解析
                const decoded = atob(charaStr); 
                textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
                meta = parseTavernJson(textData);
@@ -2339,12 +2342,10 @@ async function startImport() {
            }
         }
         base64 = bufToBase64(buffer, 'image/png');
-        // ❌ 【修复】：彻底禁用 PNG 的静默压缩，防止被转为 JPG 丢失所有角色设定！
-        // if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
+        if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
       } else if (ext === 'webp') {
         base64 = bufToBase64(buffer, 'image/webp');
-        // ❌ 【修复】：彻底禁用 WebP 的静默压缩，原因同上！
-        // if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
+        if (base64 && base64.length > 1.5 * 1024 * 1024) base64 = await silentCompress(base64, 1200);
       } else if (ext === 'json') {
         textData = new TextDecoder().decode(buffer);
         meta = JSON.parse(textData);
@@ -2382,7 +2383,7 @@ async function startImport() {
       }
 
       let wbEntries = [];
-      if(meta.character_book && meta.character_book.entries) {
+            if(meta.character_book && meta.character_book.entries) {
         const entriesArr = Array.isArray(meta.character_book.entries) ? meta.character_book.entries : Object.values(meta.character_book.entries);
         wbEntries = entriesArr.map(e => ({
           name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (Array.isArray(e.key) ? e.key.join(', ') : (e.keys || e.key || '')),
@@ -2947,13 +2948,11 @@ async function wdFetch(path, opts={}) {
 }
 async function syncPush() {
   if(!webdavConfig.url) return alert('未配置WebDAV');
-  showBusy('推送到云端', '正在对比差异增量...', 0.1);
+  showBusy('推送到云端', '正在整理元数据...', 0.1);
   try {
-    const base = 'KakuSync/'; 
-    // 忽略目录已存在的报错
-    await wdFetch(base, {method:'MKCOL'}).catch(() => {}); 
-    
-    // 1. 获取云端现有的 Index，用于对比增量
+    const base = 'KakuSync/';
+    await wdFetch(base, {method:'MKCOL'}).catch(() => {});
+
     let cloudHashes = {};
     try {
       const idxRes = await wdFetch(base + 'Index.json');
@@ -2966,40 +2965,81 @@ async function syncPush() {
           });
         }
       }
-    } catch(e) { console.log('初次同步或云端无索引'); }
+    } catch(e) {}
 
     const keys = await dbKeys('cards');
     let indexEntries = [];
-    let cardsToUpload = []; // 仅存需要上传的卡片 ID
-    
-    // 2. 建立本地索引并精准比对
+    let cardsToUpload = [];
+    let fileMap = {};
+
     document.getElementById('busySub').textContent = '比对本地数据...';
-    for (let k of keys) {
-        const c = await dbG('cards', k);
+    for (let c of S.cards) {
         indexEntries.push(c.id + ':' + c.hash);
-        // 核心优化：只筛选哈希值不同或云端没有的卡片
-        if(cloudHashes[c.id] !== c.hash) {
-          cardsToUpload.push(c.id);
-        }
+        // 生成纯净的文件名，去除非法字符
+        const safeName = (c.name || 'card').replace(/[\\/:*?"<>|]/g, '');
+        // 直接通过内存轻量字段判断，避免查询重型数据库
+        const isImg = c.fileType && (c.fileType.includes('png') || c.fileType.includes('webp'));
+        const ext = isImg ? (c.fileType.includes('webp') ? '.webp' : '.png') : '.json';
+        const fileName = `${safeName}_${c.id}${ext}`;
+        
+        // 将分组、收藏等纯卡库私有数据保存在索引里
+        fileMap[c.id] = { name: c.name, file: fileName, kakuMeta: { section: c.section, groupId: c.groupId, favorite: c.favorite, importedAt: c.importedAt } };
+        // 如果云端没有这个文件的记录，或者哈希不一致，就判定为需要上传
+        if(!cloudHashes[c.id] || cloudHashes[c.id] !== c.hash) cardsToUpload.push(c.id);
     }
 
-    const dumpStr = JSON.stringify({ meta: { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib }, inventory_hash: indexEntries.join('|') });
+    // 保存非角色卡的系统配置数据，包含 Worker 地址
+    const metaDump = { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib, tavernProxyUrl: tavernProxy };
+    const dumpStr = JSON.stringify({ meta: metaDump, fileMap: fileMap, inventory_hash: indexEntries.join('|') });
     await wdFetch(base+'Index.json', { method:'PUT', body: dumpStr });
-    
-    // 3. 仅上传有差异的卡片，极大提升速度
+
     for(let i=0; i<cardsToUpload.length; i++) {
-        document.getElementById('busySub').textContent = `正在上传增量 (${i+1}/${cardsToUpload.length})...`;
+        document.getElementById('busySub').textContent = `正在上传单体卡片 (${i+1}/${cardsToUpload.length})...`;
         document.getElementById('busyBar').style.width = ((i/cardsToUpload.length)*100)+'%';
-        const fullCard = await dbG('cards', cardsToUpload[i]); 
-        await wdFetch(base + fullCard.id + '.json', { method:'PUT', body: JSON.stringify(fullCard) });
-        await new Promise(r => setTimeout(r, 10)); // 释放内存与UI线程
+        const fullCard = await dbG('cards', cardsToUpload[i]);
+        const fInfo = fileMap[fullCard.id];
+
+        if(fullCard.originalDataUrl && fInfo.file.endsWith('.png')) {
+            // 实时将卡片打包成内置好最新设定的 PNG 图片供用户直连下载
+            let meta = {
+               name: fullCard.name || "", description: fullCard.description || "",
+               personality: fullCard.personality || "", scenario: fullCard.scenario || "",
+               creator_notes: fullCard.note || "", tags: fullCard.tags || [],
+               mes_example: fullCard.mesExample || ""
+            };
+            if (fullCard.dialogEntries && fullCard.dialogEntries.length > 0) {
+               meta.first_mes = fullCard.dialogEntries[0] || "";
+               meta.alternate_greetings = fullCard.dialogEntries.slice(1);
+            } else { meta.first_mes = fullCard.first_mes || ""; }
+            if (fullCard.worldBookEntries && fullCard.worldBookEntries.length > 0) {
+               meta.character_book = { name: meta.name, entries: fullCard.worldBookEntries.map((e, idx) => ({
+                   id: idx, keys: (e.actual_keywords !== undefined ? e.actual_keywords : (e.keys||'')).split(/[,，、]+/).map(k=>k.trim()).filter(Boolean),
+                   comment: e.name || "未命名", content: e.content || "", constant: !!e.constant,
+                   insertion_order: e.order !== undefined ? Number(e.order) : 100, enabled: e.enabled !== false, position: e.position === 1 ? "after_char" : "before_char",
+                   extensions: { position: e.position||0, role: e.role||0, depth: e.depth||4, probability: e.probability||100 }
+               }))};
+            }
+            const finalBlob = buildUpdatedPngBlob(fullCard.originalDataUrl, meta);
+            await wdFetch(base + fInfo.file, { method:'PUT', body: finalBlob });
+        } else if (fullCard.originalDataUrl && fInfo.file.endsWith('.webp')) {
+            // WEBP 无损直传
+            const binary = atob(fullCard.originalDataUrl.split(',')[1]);
+            const bytes = new Uint8Array(binary.length);
+            for (let j=0; j<binary.length; j++) bytes[j] = binary.charCodeAt(j);
+            await wdFetch(base + fInfo.file, { method:'PUT', body: new Blob([bytes], {type: 'image/webp'}) });
+        } else {
+            // 纯文本卡片传 JSON
+            await wdFetch(base + fInfo.file, { method:'PUT', body: JSON.stringify(fullCard) });
+        }
+        await new Promise(r => setTimeout(r, 10)); // 防止卡死 UI
     }
-    
-    dbP('meta', {key: 'webdavSyncTime', value: Date.now()}); 
-    loadWebdavConfig(); 
-    showToast(cardsToUpload.length > 0 ? `增量同步完成！上传了 ${cardsToUpload.length} 张卡片` : '云端已是最新，无需同步');
+
+    dbP('meta', {key: 'webdavSyncTime', value: Date.now()});
+    loadWebdavConfig();
+    showToast(cardsToUpload.length > 0 ? `同步完成！上传了 ${cardsToUpload.length} 张单体角色卡` : '云端已是最新，无需同步');
   } catch(e) { alert("同步失败(跨域CORS?): "+e.message); } finally { hideBusy(); }
 }
+
 // ============================================================
 // 重写：WebDAV 可视化按需拉取
 // ============================================================
@@ -3007,31 +3047,50 @@ let _wdPullList = [];
 
 async function syncPull() {
   if(!webdavConfig.url) return alert('未配置WebDAV');
-  showBusy('请求云端数据', '正在读取远端索引 Index.json...', 0.3);
-  
+  showBusy('请求云端数据', '正在读取远端云索引...', 0.3);
+
   try {
     const base = 'KakuSync/';
     const indexRes = await wdFetch(base + 'Index.json', { method: 'GET' });
     if (!indexRes.ok) throw new Error('找不到云端索引文件，您可能还未向云端推送过数据。');
     
     const indexData = await indexRes.json();
+
+    // ===================================
+    // 自动恢复非角色卡设置 (Worker地址等)
+    // ===================================
+    if(indexData.meta && indexData.meta.tavernProxyUrl) {
+        tavernProxy = indexData.meta.tavernProxyUrl;
+        dbP('meta', {key: 'tavernProxyUrl', value: tavernProxy});
+        const tpInp = document.getElementById('tavernProxyUrl');
+        if(tpInp) tpInp.value = tavernProxy;
+        showToast('已自动恢复 API Worker 代理配置', 'success');
+    }
+
     const cloudHashes = indexData.inventory_hash ? indexData.inventory_hash.split('|') : [];
+    const fileMap = indexData.fileMap || {};
     
     _wdPullList = cloudHashes.filter(h => h.includes(':')).map(entry => {
         const [id, hash] = entry.split(':');
-        const exist = S.cards.find(c => c.id === id);
-        return { id, hash, isNew: !exist }; 
+        const fInfo = fileMap[id] || { name: '未知卡片', file: id + '.json', kakuMeta: {} };
+        // 核心修复：同时比对 ID、内容指纹(Hash)、卡片名称，只要有一个对上，本地就判定为已存在，智能勾选不再抓瞎
+        const exist = S.cards.find(c => c.id === id || c.hash === hash || c.name === fInfo.name);
+        return { id, hash, name: fInfo.name, file: fInfo.file, kakuMeta: fInfo.kakuMeta, isNew: !exist }; 
     });
-    
+	
     if(!_wdPullList.length) throw new Error("云端记录为空");
 
     const listEl = document.getElementById('wdList');
     listEl.innerHTML = _wdPullList.map((c, idx) => `
-        <label style="display:flex; align-items:center; padding:8px; border-bottom:1px solid var(--bd2); cursor:pointer;">
-            <input type="checkbox" class="wd-checkbox" data-idx="${idx}" ${c.isNew ? 'checked' : ''} style="margin-right:12px;">
-            <div style="flex:1;">
-                <div style="font-size:12px; font-weight:bold; font-family:monospace; color:var(--ink);">FILE: ${c.id}.json</div>
-                <div style="font-size:10px; color:${c.isNew ? 'var(--gold)' : 'var(--ink3)'};">${c.isNew ? '✨ 本地缺失 (建议恢复)' : '✓ 本地已存在'}</div>
+        <label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--bd2); cursor:pointer; background:var(--p2); transition:background .2s;">
+            <input type="checkbox" class="wd-checkbox" data-idx="${idx}" ${c.isNew ? 'checked' : ''} style="margin-right:12px; width:16px; height:16px; flex-shrink:0;">
+            <div style="width:40px; height:40px; border-radius:50%; background:var(--p3); margin-right:12px; overflow:hidden; border:1px solid var(--bd); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--ink4); flex-shrink:0;">
+                📇
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:13px; font-weight:bold; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(c.name)}</div>
+                <div style="font-size:10px; color:var(--ink3); font-family:monospace; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🖼️ ${esc(c.file)}</div>
+                <div style="font-size:10px; margin-top:2px; ${c.isNew ? 'color:var(--gold);' : 'color:var(--ink3);'}">${c.isNew ? '✨ 本地缺失 (建议恢复)' : '✓ 本地已存在'}</div>
             </div>
         </label>
     `).join('');
@@ -3041,6 +3100,7 @@ async function syncPull() {
   } catch(e) { hideBusy(); alert("拉取异常：" + e.message); }
 }
 
+function wdCheckSmart() { document.querySelectorAll('.wd-checkbox').forEach(cb => { cb.checked = _wdPullList[cb.dataset.idx].isNew; }); }
 function wdCheckAll() { document.querySelectorAll('.wd-checkbox').forEach(cb => cb.checked = true); }
 function wdCheckNone() { document.querySelectorAll('.wd-checkbox').forEach(cb => cb.checked = false); }
 
@@ -3053,18 +3113,79 @@ async function executeWebdavPull() {
     
     for(let i=0; i<selectedIdxs.length; i++) {
         const target = _wdPullList[selectedIdxs[i]];
-        document.getElementById('busySub').textContent = `正在下载 (${i+1}/${selectedIdxs.length}): ${target.id}.json`;
+        document.getElementById('busySub').textContent = `正在下载 (${i+1}/${selectedIdxs.length}): ${target.file}`;
         document.getElementById('busyBar').style.width = ((i/selectedIdxs.length)*100)+'%';
         
         try {
-             const res = await wdFetch(base + target.id + '.json', { method: 'GET' });
-             if(res.ok) { await dbP('cards', await res.json()); pullOk++; }
+             const res = await wdFetch(base + target.file, { method: 'GET' });
+             if(res.ok) {
+                 if(target.file.endsWith('.json')) {
+                     // 兼容纯文本老档案
+                     const cardData = await res.json();
+                     await dbP('cards', cardData);
+                     pullOk++;
+                 } else {
+                     // 核心：处理单体 PNG/WEBP 下载并逆向提取 EXIF 还原为卡库数据
+                     const blob = await res.blob();
+                     const buffer = await blob.arrayBuffer();
+
+                     let meta = {};
+                     const charaStr = extractExifMetadata(buffer, 'chara');
+                     if(charaStr) {
+                         try {
+                             const decoded = atob(charaStr);
+                             const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, c=>c.charCodeAt(0)));
+                             meta = parseTavernJson(textData) || {};
+                         } catch (e) { meta = parseTavernJson(charaStr) || {}; }
+                     }
+
+                     const reader = new FileReader();
+                     const base64Str = await new Promise(r => { reader.onload = ()=>r(reader.result); reader.readAsDataURL(new Blob([buffer])); });
+
+                     const finalDesc = meta.description || "";
+                     const dlgs = [];
+                     if(meta.mes_example) dlgs.push(meta.mes_example);
+                     if(meta.first_mes) dlgs.push(meta.first_mes);
+                     if(meta.alternate_greetings && Array.isArray(meta.alternate_greetings)) meta.alternate_greetings.forEach(g => dlgs.push(g));
+
+                     let wbEntries = [];
+                     if(meta.character_book && meta.character_book.entries) {
+                         const entriesArr = Array.isArray(meta.character_book.entries) ? meta.character_book.entries : Object.values(meta.character_book.entries);
+                         wbEntries = entriesArr.map(e => ({
+                           name: (e.comment && e.comment.trim()) || '（无标题）', keys: Array.isArray(e.keys) ? e.keys.join(', ') : (e.keys || ''), content: e.content || '',
+                           position: e.position||0, role: e.role||0, depth: e.depth||4, order: e.order||e.insertion_order||100,
+                           probability: e.probability||100, constant: e.constant||false, enabled: e.enabled!==false
+                         }));
+                     }
+                     let pres = [];
+                     if(Array.isArray(meta.prompts)) meta.prompts.forEach(p => { if(p.name) pres.push({name: '▸ '+p.name, content: String(p.content||'')}) });
+                     if(Array.isArray(meta.regex_scripts)) meta.regex_scripts.forEach(s => { if(s.scriptName) pres.push({name: '⟢ '+s.scriptName, content: String(s.replaceString||'')}) });
+
+                     // 结合卡库专属的元数据（如分组/收藏）
+                     const km = target.kakuMeta || {};
+                     const newCard = {
+                         id: target.id, hash: target.hash,
+                         name: meta.name || target.name, description: finalDesc,
+                         personality: meta.personality || "", first_mes: meta.first_mes || "",
+                         mesExample: meta.mes_example || "", note: meta.creator_notes || "",
+                         originalDataUrl: base64Str, thumb: await genThumb(base64Str, 400),
+                         fileType: target.file.endsWith('.webp') ? 'image/webp' : 'image/png', fileSize: blob.size,
+                         importedAt: km.importedAt || Date.now(), section: km.section || S.sections[0],
+                         favorite: km.favorite || false, groupId: km.groupId || '',
+                         tags: meta.tags || [], charCount: finalDesc.length,
+                         dialogEntries: dlgs, worldBookEntries: wbEntries, presetEntries: pres
+                     };
+                     await dbP('cards', newCard);
+                     pullOk++;
+                 }
+             }
         } catch(ex) { console.warn("下载失败", target.id); }
     }
     
     hideBusy(); await loadCardsLightweight(); renderAll();
-    showToast(`恢复完毕！成功下载 ${pullOk} 个存档。`);
+    showToast(`恢复完毕！成功下载 ${pullOk} 张角色卡。`);
 }
+
 function autoSyncCheck() {
   if(!webdavConfig.autoSync) return;
   // 静默检查本地变动，对比云端Index文件里的哈希值...略
@@ -3141,15 +3262,17 @@ function closeModal(id) {
     _currentDetailId = null;
     document.getElementById('appContainer').classList.remove('fullscreen-detail'); // 关闭时自动退出全屏
     // 触发大屏双栏检测，释放被锁死的 DOM
-    if (typeof checkSplitPaneMode === 'function') {
-      checkSplitPaneMode();
-    }
+    checkSplitPaneMode();
   }
 }
 
 document.querySelectorAll('.modal-box').forEach(b => { b.addEventListener('click', e => e.stopPropagation()); });
-/* 如果需要点击遮罩直接关闭弹窗，请启用以下行： */
-/* document.querySelectorAll('.modal-mask').forEach(m => { m.addEventListener('click', () => { m.classList.remove('show'); document.body.style.overflow=''; }); }); */
+// 启用点击遮罩关闭弹窗，并对接安全卸载逻辑
+document.querySelectorAll('.modal-mask').forEach(m => { 
+  m.addEventListener('click', () => { 
+    closeModal(m.id); 
+  }); 
+});
 
 function toggleFav(id) {
   let c = S.cards.find(x=>x.id===id); if(!c) return; c.favorite = !c.favorite;
@@ -3195,50 +3318,113 @@ window.addEventListener('DOMContentLoaded', init);
 // 批量与全局 Tavern 同步功能引擎
 //======================================
 
-// 内部核心函数：执行数组队列的批量推送 (基于新架构) - 修复版
+// 内部核心函数：执行数组队列的批量推送
 async function execBatchPushToTavern(idList) {
   if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
-  if (!confirm(`准备推送 ${idList.length} 张卡片到酒馆，确定执行？`)) return;
+  if (!confirm(`准备推送 ${idList.length} 张卡片到酒馆，稍后可以在进度条查看状态。\n(系统会自动检测同名卡片，覆盖更新而不产生重复)\n确定执行？`)) return;
 
-  showBusy('批量推送中', '正在获取酒馆目录...', 0.1);
+  showBusy('批量推送中', '正在与酒馆建立连接...', 0.05);
   let success = 0, fail = 0;
-  
+
   try {
-    let listResp = await fetch(tavernProxy + '/api/characters/all', { 
-      method: 'POST', 
-      body: JSON.stringify({}) 
-    }).catch(() => fetch(tavernProxy + '/api/characters/all'));
-    
+    let listResp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
     let list = await listResp.json();
     if (!Array.isArray(list)) list = list.default || Object.values(list);
 
     for (let i = 0; i < idList.length; i++) {
        document.getElementById('busyBar').style.width = ((i / idList.length) * 100) + '%';
-       
-       // ✅ 核心修复：从数据库加载完整数据
-       const fullCard = await dbG('cards', idList[i]);
-       if (!fullCard || !fullCard.originalDataUrl) { 
-         fail++; 
-         continue; 
-       }
+       const c = await dbG('cards', idList[i]);
+       if (!c || !c.originalDataUrl) { fail++; continue; }
 
-       document.getElementById('busySub').textContent = `正在推送 (${i+1}/${idList.length}): ${fullCard.name}`;
-       const existChar = list.find(card => card.name === fullCard.name);
+       document.getElementById('busySub').textContent = `正在推送 (${i+1}/${idList.length}): ${c.name}`;
+       const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
+       const existChar = list.find(card => card.name === c.name);
+
+       try {
+           const buffer = await blob.arrayBuffer();
+           let meta = {};
+           const charaStr = extractExifMetadata(buffer, 'chara');
+           if(charaStr) {
+               try {
+                   const decoded = atob(charaStr); 
+                   const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
+                   meta = parseTavernJson(textData) || {};
+               } catch (e) {
+                   meta = parseTavernJson(charaStr) || {};
+               }
+           }
+           
+           meta.name = c.name || meta.name || "";
+           meta.description = c.description ?? meta.description ?? "";
+           meta.personality = c.personality ?? meta.personality ?? "";
+           meta.scenario = c.scenario ?? meta.scenario ?? "";
+           meta.creator_notes = c.note ?? meta.creator_notes ?? "";
+           if (c.tags && c.tags.length > 0) meta.tags = c.tags;
+
+           if (c.dialogEntries && c.dialogEntries.length > 0) {
+               meta.first_mes = c.dialogEntries[0] || "";
+               meta.alternate_greetings = c.dialogEntries.slice(1);
+           } else {
+               meta.first_mes = c.first_mes || meta.first_mes || "";
+           }
+           meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+
+           if (c.worldBookEntries && c.worldBookEntries.length > 0) {
+               const charBook = meta.character_book || (meta.data ? meta.data.character_book : null) || {};
+               charBook.name = meta.name || charBook.name || "Kaku World";
+               charBook.entries = c.worldBookEntries.map((e, idx) => {
+                   let keysStr = e.actual_keywords !== undefined ? e.actual_keywords : (Array.isArray(e.keys) ? e.keys.join(',') : (e.keys || ''));
+                   let keysArr = keysStr.split(/[,，、]+/).map(k=>k.trim()).filter(Boolean);
+                   return {
+                       id: idx, uid: idx, keys: keysArr, secondary_keys: [],
+                       comment: e.name || keysStr || "未命名", content: e.content || "",
+                       constant: !!e.constant, vectorized: false, selective: e.selective !== false,
+                       insertion_order: e.order !== undefined ? Number(e.order) : 100,
+                       enabled: e.enabled !== false, position: e.position === 1 ? "after_char" : "before_char",
+                       use_regex: true,
+                       extensions: {
+                           position: e.position !== undefined ? Number(e.position) : 0, role: e.role !== undefined ? Number(e.role) : 0,
+                           depth: e.depth !== undefined ? Number(e.depth) : 4, probability: e.probability !== undefined ? Number(e.probability) : 100,
+                           prevent_recursion: true, delay_until_recursion: false, display_index: idx, group: "", group_weight: 100
+                       }
+                   };
+               });
+               meta.character_book = charBook;
+               if (meta.data) meta.data.character_book = charBook;
+           } else {
+               delete meta.character_book;
+               if (meta.data) delete meta.data.character_book;
+           }
+
+           const finalBlob = buildUpdatedPngBlob(c.originalDataUrl, meta);
+           
+           let safeName = c.name.replace(/[\\/:*?"<>|]/g, '');
+           let targetAvatar = existChar ? existChar.avatar : `${safeName}.png`;
+           
+           if (existChar) {
+               await fetch(tavernProxy + '/api/characters/delete', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ avatar_url: existChar.avatar })
+               }).catch(e => console.warn(e));
+           }
+
+           const fd = new FormData();
+           fd.append("avatar", finalBlob, targetAvatar);
+           fd.append("file_type", "png");
+           fd.append("preserved_name", targetAvatar);
+           await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: fd });
+
+         success++;
+       } catch(e) { fail++; }
        
-       try { 
-         await uploadCardToTavern(fullCard, existChar); 
-         success++; 
-       } catch(e) { 
-         fail++; 
-       }
+       await new Promise(resolve => setTimeout(resolve, 10)); 
     }
-    
-    alert(`批量推送完成！\n✅ 成功: ${success}\n❌ 跳过/失败: ${fail}`);
-  } catch(e) { 
-    alert("网络请求失败：" + e.message); 
-  } finally { 
-    hideBusy(); 
-    exitSelectMode(); 
+    alert(`批量推送完成！\n✅ 成功: ${success}\n❌ 跳过无图/失败: ${fail}`);
+  } catch(e) {
+    alert("网络请求失败：" + e.message);
+  } finally {
+    hideBusy(); exitSelectMode();
   }
 }
 
@@ -3257,7 +3443,7 @@ function pushAllToTavern() {
 // 终极杀器：供右上角调用的【一键双向同步】 (先推送到酒馆，再拉取酒馆的新卡)
 async function syncWithTavern() {
   if (!tavernProxy) return alert("请先配置 Tavern API Proxy!");
-  if (!confirm("准备执行终极一键双向同步：\n1. 将本地修改覆盖式推送至酒馆\n2. 从酒馆抓取本地不存在的新角色\n需等待一段时间，确认开始？")) return;
+  if (!confirm("准备执行终极一键双向同步：\n1. 将本地修改无重复地推送到酒馆\n2. 从酒馆抓取本地不存在的新角色\n需等待一段时间，确认开始？")) return;
 
   showBusy('一键双向同步', '阶段 1/2: 正在推送卡库数据至云端...', 0.05);
 
@@ -3266,16 +3452,93 @@ async function syncWithTavern() {
     let list = await listResp.json();
     if (!Array.isArray(list)) list = list.default || Object.values(list);
 
-        // --- 阶段一：全库无情覆盖式推送 ---
+    // --- 阶段一：全库无情覆盖式推送 ---
     let pushOk = 0, pushFail = 0;
     for (let i = 0; i < S.cards.length; i++) {
-       document.getElementById('busyBar').style.width = ((i / S.cards.length) * 50) + '%';
+       document.getElementById('busyBar').style.width = ((i / S.cards.length) * 50) + '%'; 
        const c = await dbG('cards', S.cards[i].id);
        if (!c || !c.originalDataUrl) continue;
-
+       
        document.getElementById('busySub').textContent = `1/2 推送中 (${i+1}/${S.cards.length}): ${c.name}`;
+       const blob = await fetch(c.originalDataUrl).then(r=>r.blob());
        const existChar = list.find(card => card.name === c.name);
-       try { await uploadCardToTavern(c, existChar); pushOk++; } catch(e) { pushFail++; }
+
+       try {
+           const buffer = await blob.arrayBuffer();
+           let meta = {};
+           const charaStr = extractExifMetadata(buffer, 'chara');
+           if(charaStr) {
+               try {
+                   const decoded = atob(charaStr); 
+                   const textData = new TextDecoder('utf-8').decode(Uint8Array.from(decoded, char=>char.charCodeAt(0)));
+                   meta = parseTavernJson(textData) || {};
+               } catch (e) {
+                   meta = parseTavernJson(charaStr) || {};
+               }
+           }
+           
+           meta.name = c.name || meta.name || "";
+           meta.description = c.description ?? meta.description ?? "";
+           meta.personality = c.personality ?? meta.personality ?? "";
+           meta.first_mes = c.first_mes ?? meta.first_mes ?? "";
+           meta.mes_example = c.mesExample ?? meta.mes_example ?? "";
+           meta.creator_notes = c.note ?? meta.creator_notes ?? "";
+           if (c.tags && c.tags.length > 0) meta.tags = c.tags;
+
+           if (c.dialogEntries && c.dialogEntries.length > 0) {
+               meta.first_mes = c.dialogEntries[0] || "";
+               meta.alternate_greetings = c.dialogEntries.slice(1);
+           }
+           
+           if (c.worldBookEntries && c.worldBookEntries.length > 0) {
+               const charBook = meta.character_book || (meta.data ? meta.data.character_book : null) || {};
+               charBook.name = meta.name || charBook.name || "Kaku World";
+               charBook.entries = c.worldBookEntries.map((e, idx) => {
+                   let keysStr = e.actual_keywords !== undefined ? e.actual_keywords : (Array.isArray(e.keys) ? e.keys.join(',') : (e.keys || ''));
+                   let keysArr = keysStr.split(/[,，、]+/).map(k=>k.trim()).filter(Boolean);
+                   return {
+                       id: idx, uid: idx, keys: keysArr, secondary_keys: [],
+                       comment: e.name || keysStr || "未命名", content: e.content || "",
+                       constant: !!e.constant, vectorized: false, selective: e.selective !== false,
+                       insertion_order: e.order !== undefined ? Number(e.order) : 100,
+                       enabled: e.enabled !== false, position: e.position === 1 ? "after_char" : "before_char",
+                       use_regex: true,
+                       extensions: {
+                           position: e.position !== undefined ? Number(e.position) : 0, role: e.role !== undefined ? Number(e.role) : 0,
+                           depth: e.depth !== undefined ? Number(e.depth) : 4, probability: e.probability !== undefined ? Number(e.probability) : 100,
+                           prevent_recursion: true, delay_until_recursion: false, display_index: idx, group: "", group_weight: 100
+                       }
+                   };
+               });
+               meta.character_book = charBook;
+               if (meta.data) meta.data.character_book = charBook;
+           } else {
+               delete meta.character_book;
+               if (meta.data) delete meta.data.character_book;
+           }
+
+           const finalBlob = buildUpdatedPngBlob(c.originalDataUrl, meta);
+           let safeName = c.name.replace(/[\\/:*?"<>|]/g, '');
+           let targetAvatar = existChar ? existChar.avatar : `${safeName}.png`;
+
+           if (existChar) {
+               await fetch(tavernProxy + '/api/characters/delete', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({ avatar_url: existChar.avatar })
+               }).catch(e => console.warn(e));
+           }
+
+           const fd = new FormData();
+           fd.append("avatar", finalBlob, targetAvatar);
+           fd.append("file_type", "png");
+           fd.append("preserved_name", targetAvatar);
+           
+           await fetch(tavernProxy + '/api/characters/import', { method: 'POST', body: fd });
+           pushOk++;
+       } catch(e) { pushFail++; }
+       
+       await new Promise(resolve => setTimeout(resolve, 10)); // 防假死
     }
 
     // --- 阶段二：刷新酒馆最新列表，准备拉新卡回库 ---
@@ -3574,6 +3837,15 @@ window.changeReadFontSize = function(dir) {
   body.style.fontSize = (currentSize + dir * 2) + 'px';
 };
 
+window.copyReadText = function() {
+  const text = document.getElementById('readBody').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('文本已成功复制到剪贴板！');
+  }).catch(() => {
+    showToast('复制失败，请手动框选', 'error');
+  });
+};
+
 // ==========================================
 // 新增：右侧详情栏全屏放大
 // ==========================================
@@ -3705,6 +3977,51 @@ window.fixWbKeys = function(id, idx) {
         });
     });
 };
+// ==========================================
+// 核心工具：将最新数据完美打包成酒馆原生 V2 PNG 卡片
+// ==========================================
+function buildUpdatedPngBlob(base64Data, metaObj) {
+    const jsonStr = JSON.stringify(metaObj);
+    const encodedJson = btoa(unescape(encodeURIComponent(jsonStr)));
+    const chunkData = "chara\0" + encodedJson;
+    const crcTable = [];
+    for (let i = 0; i < 256; i++) {
+        let c = i;
+        for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+        crcTable[i] = c;
+    }
+    const crc32 = (str) => {
+        let crc = 0xFFFFFFFF;
+        for (let i = 0; i < str.length; i++) crc = crcTable[(crc ^ str.charCodeAt(i)) & 0xFF] ^ (crc >>> 8);
+        return (crc ^ 0xFFFFFFFF) >>> 0;
+    };
+    const lenBuf = new Uint8Array(4);
+    new DataView(lenBuf.buffer).setUint32(0, chunkData.length, false);
+    const crcBuf = new Uint8Array(4);
+    new DataView(crcBuf.buffer).setUint32(0, crc32("tEXt" + chunkData), false);
+    
+    const binary = atob(base64Data.split(',')[1]);
+    let out = binary.substring(0, 8);
+    let offset = 8;
+    while (offset < binary.length) {
+        const chunkLen = (binary.charCodeAt(offset) << 24) | (binary.charCodeAt(offset+1) << 16) | (binary.charCodeAt(offset+2) << 8) | binary.charCodeAt(offset+3);
+        const type = binary.substring(offset+4, offset+8);
+        if (type === 'IEND') {
+            out += String.fromCharCode(...lenBuf) + "tEXt" + chunkData + String.fromCharCode(...crcBuf);
+            out += binary.substring(offset, offset + 12);
+            break;
+        }
+        if (type === 'tEXt' && binary.substring(offset+8, offset+14) === "chara\0") {
+            offset += chunkLen + 12;
+            continue; // 跳过旧数据块
+        }
+        out += binary.substring(offset, offset + chunkLen + 12);
+        offset += chunkLen + 12;
+    }
+    const bytes = new Uint8Array(out.length);
+    for (let i=0; i<out.length; i++) bytes[i] = out.charCodeAt(i);
+    return new Blob([bytes], {type: 'image/png'});
+}
 </script>
 </body>
 </html>
