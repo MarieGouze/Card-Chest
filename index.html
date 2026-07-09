@@ -246,12 +246,10 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* 卡片悬停快捷交互 (触控笔/鼠标) */
-.card-hover-actions { position: absolute; top: 0; left: 0; right: 0; height: 100%; background: rgba(44,36,22,0.85); backdrop-filter: blur(2px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 10;}
+.card-hover-actions { position: absolute; top: 0; left: 0; right: 0; height: 100%; background: rgba(44,36,22,0.9); backdrop-filter: blur(2px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 10; padding: 4px 0;}
 @media (hover: hover) { .card-item:hover .card-hover-actions { opacity: 1; pointer-events: auto; } }
-.cha-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: all 0.2s; transform: translateY(10px); display: flex; align-items: center; gap: 6px;}
+.cha-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 3px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; transition: all 0.15s; transform: translateY(5px); display: flex; align-items: center; gap: 4px; width: 85%; justify-content: center;}
 .card-item:hover .cha-btn { transform: translateY(0); }
-.cha-btn:nth-child(2) { transition-delay: 0.05s; }
-.cha-btn:nth-child(3) { transition-delay: 0.1s; }
 .cha-btn:hover { background: var(--gold); border-color: var(--gold); }
 .cha-btn.st-push:hover { background: #3b82f6; border-color: #3b82f6; } /* 酒馆推送专属色 */
 
@@ -742,7 +740,7 @@ var DICT={PINYINS:PINYINS,UNIHANS:UNIHANS,EXCEPTIONS:EXCEPTIONS};
 var FIRST_PINYIN_UNIHAN = '\u963F';var LAST_PINYIN_UNIHAN = '\u9FFF';var LATIN = 1;var PINYIN = 2;var UNKNOWN = 3;var supported = null;var COLLATOR = void 0;
 function patchDict(patchers) {if (!patchers) return;if (typeof patchers === 'function') {patchers = [patchers];}if (patchers.forEach) {patchers.forEach(function (p) {typeof p === 'function' && p(DICT);});}}
 function isSupported(force) {if (!force && supported !== null) {return supported;}if (typeof Intl === 'object' && Intl.Collator) {COLLATOR = new Intl.Collator(['zh-Hans-CN', 'zh-CN']); supported=true;}else{supported=false;} return supported;}
-function genToken(ch) {var UNIHANS = DICT.UNIHANS;
+function genToken(ch) {var UNIHANS = DICT.UNIHANS;var PINYINS = DICT.PINYINS;var EXCEPTIONS = DICT.EXCEPTIONS;var token = {source: ch};if (ch in EXCEPTIONS) {token.type = PINYIN;token.target = EXCEPTIONS[ch];return token;}var offset = -1;var cmp = void 0;if (ch.charCodeAt(0) < 256) {token.type = LATIN;token.target = ch;return token;} else {cmp = COLLATOR.compare(ch, FIRST_PINYIN_UNIHAN);if (cmp < 0) {token.type = UNKNOWN;token.target = ch;return token;} else if (cmp === 0) {token.type = PINYIN;offset = 0;} else {cmp = COLLATOR.compare(ch, LAST_PINYIN_UNIHAN);if (cmp > 0) {token.type = UNKNOWN;token.target = ch;return token;} else if (cmp === 0) {token.type = PINYIN;offset = UNIHANS.length - 1;}}}token.type = PINYIN;if (offset < 0) {var begin = 0;var end = UNIHANS.length - 1;while (begin <= end) {offset = ~~((begin + end) / 2);var unihan = UNIHANS[offset];cmp = COLLATOR.compare(ch, unihan);if (cmp === 0) {break;}else if (cmp > 0) {begin = offset + 1;}else {end = offset - 1;}}}if (cmp < 0) {offset--;}token.target = PINYINS[offset];if (!token.target) {token.type = UNKNOWN;token.target = token.source;}return token;}
 function parse(str) {if (typeof str !== 'string') {throw new Error('argument should be string.');}if (!isSupported()) {throw new Error('not support Intl or zh-CN language.');}return str.split('').map(function (v) {return genToken(v);});}
 return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: genToken,convertToPinyin: function convertToPinyin(str, separator, lowerCase) {return parse(str).map(function (v) {if (lowerCase && v.type === PINYIN) {return v.target.toLowerCase();}return v.target;}).join(separator || '');}};
 })();
@@ -1464,6 +1462,7 @@ function lighten(full) {
   const safeSubtags = Array.isArray(full.subtags) ? full.subtags : (typeof full.subtags === 'string' ? [full.subtags] : []);
   
   return {
+    id: full.id,
     groupId: full.groupId,
     parentId: full.parentId,
     annex: full.annex,
@@ -1836,10 +1835,7 @@ function mkCardEl(card, isDup, q, gm) {
     div.onclick = ev => toggleSelect(card.id, ev);
   } else {
     div.onclick = () => openDetail(card.id);
-    div.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); showContextMenu(ev, card.id); });
-    let _lpt;
-    div.addEventListener('touchstart', (e) => { _lpt = setTimeout(() => { showContextMenu(e.touches[0], card.id); }, 500); }, {passive:true});
-    div.addEventListener('touchend', () => clearTimeout(_lpt)); div.addEventListener('touchmove', () => clearTimeout(_lpt), {passive:true});
+    // 已彻底清空并注销鼠标右键与手机长按菜单的全部绑定
   }
 
   const covSrc = card._thumbBlobUrl || null;
@@ -1858,7 +1854,10 @@ function mkCardEl(card, isDup, q, gm) {
   const hoverActions = `<div class="card-hover-actions">
     <button class="cha-btn" onclick="event.stopPropagation(); openLightbox('${card.id}')">👁️ 预览大图</button>
     <button class="cha-btn" onclick="event.stopPropagation(); exportCard('${card.id}')">↑ 导出</button>
+    <button class="cha-btn" onclick="event.stopPropagation(); editMeta('${card.id}', 'name')">✎ 快速编辑</button>
+    <button class="cha-btn" onclick="event.stopPropagation(); openMoveModal('${card.id}')">→ 移动分区</button>
     <button class="cha-btn st-push" onclick="event.stopPropagation(); pushCardToTavern('${card.id}')">☁️ 推送至酒馆</button>
+    <button class="cha-btn" style="background:rgba(139,46,46,0.3); border-color:var(--red);" onclick="event.stopPropagation(); trashCard('${card.id}')">✕ 移至回收站</button>
   </div>`;
 
   if (S.layout === 'list') {
