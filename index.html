@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
 <link rel="manifest" id="pwaManifest" href='data:application/manifest+json,{"name":"Marie's Chest","short_name":"CardChest","display":"standalone","start_url":"./","background_color":"#F5F0E8","theme_color":"#F5F0E8"}'>
 
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=mbRwF461Nqb6mXhpHWYsbQR-33L-xf_YJ94JHoF5Y4hforxs8VOxPLXv5MbseqLWpRzD87nVsUQoQ5GOYo2wLJLmgTx3seDU_UugAn2kS_cRUIGyA3HsJEmFEHa65VvK36eBxlv5J-YbSf0cf5y4Bk9OYmPZ69KYeWU2A5rvskpPB_ixbolLgbAdg95HBApxHetXH8l3OKyFO48DDGqkL5FWTL675V4gQLbXtHj6cFTvUMEmxEgCBqWPtgnLq8e_dwEahozuOWqEICkaER-lcg" charset="UTF-8"></script><style>
 /* =======================================
    基础变量与重置 
 ======================================= */
@@ -40,22 +40,52 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 ======================================= */
 /* 1. 天依蓝 (低饱和#66ccff + 浅奶黄) */
 [data-style="tianyi"] {
-  --p:#FFFCE8;--p2:#FFFFFF;--p3:#F6F1D5;--p4:#EAE3C2;
-  --ink:#2C3E50;--ink2:#4D6475;--ink3:#8A9CA8;--ink4:#C2CCD4;
-  --bd:rgba(102,204,255,.4);--bd2:rgba(102,204,255,.15);
-  --sh:rgba(102,204,255,.15);
-  --r:14px; /* 更加圆润的外观 */
+  /* 背景 - 对应 cream / white 系列 */
+  --p: #fff9ed;       /* 浅奶黄底色，极其温润 */
+  --p2: #fff;         /* 卡片纯白 */
+  --p3: #fff5e0;      /* 稍深的奶黄 (比如搜索框、次要背景) */
+  --p4: #ffefd0;      /* 更深的奶黄 (悬浮或激活状态) */
+
+  /* 文本 - 对应 text 系列 */
+  --ink: #4b5563;     /* 标题/主要文字 (深灰，不刺眼) */
+  --ink2: #6b7280;    /* 正文文字 (中灰) */
+  --ink3: #9ca3af;    /* 次要说明/占位符 (浅灰) */
+  --ink4: #b8e6ff;    /* 极浅蓝色的图标点缀 */
+
+  /* 边框与阴影 - 对应 border / shadow 系列 */
+  --bd: #e8f4fc;      /* 极清透的浅蓝边框 */
+  --bd2: #d6f2ff;     /* 稍深一点的浅蓝边框 */
+  --sh: rgba(102, 204, 255, 0.12); /* 淡淡的天依蓝弥散阴影 */
+
+  /* 圆角 */
+  --r: 18px;          /* 对应你的 --radius-md，更圆润现代 */
 }
+
+/* 🌙 对应的夜间模式 (完美映射你的 Dark Theme) */
 [data-style="tianyi"][data-theme="dark"] {
-  --p:#1A242B;--p2:#222E38;--p3:#2B3946;--p4:#364756;
-  --ink:#E5F2F7;--ink2:#B3D4E5;--ink3:#739AB0;--ink4:#4F6A7A;
-  --bd:rgba(102,204,255,.25);--bd2:rgba(102,204,255,.1);
+  --p: #1a1a2e;
+  --p2: #252540;
+  --p3: #222238;
+  --p4: #2a2a42;
+  
+  --ink: #e0e0f0;
+  --ink2: #c8c8d8;
+  --ink3: #8888a8;
+  --ink4: #3d5a6a;
+  
+  --bd: #3a3a55;
+  --bd2: #2a2838;
+  --sh: rgba(0, 0, 0, 0.3);
 }
+
+/* 🔘 按钮与高亮元素：直接调用天依蓝作为强调色 */
 [data-style="tianyi"] .actbtn.pri, 
-[data-style="tianyi"] .act-row button:first-child {
+[data-style="tianyi"] .act-row button:first-child,
+[data-style="tianyi"] .ver-chip.active {
   background-color: #66ccff !important;
   border-color: #66ccff !important;
   color: #fff !important;
+  box-shadow: 0 4px 12px rgba(102, 204, 255, 0.25) !important; /* 增加一点按钮发光感 */
 }
 
 /* 2. 小票风格 (Receipt) */
@@ -509,7 +539,26 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 .global-drop-mask{position:fixed;inset:0;z-index:99999;background:rgba(44,36,22,.7);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
 .global-drop-mask.drag{opacity:1;pointer-events:auto;}
 
-.tut-mask{position:fixed;inset:0;z-index:900;background:rgba(44,36,22,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:28px}
+.tut-mask{position:fixed;inset:0;z-index:900;background:rgba(20, 16, 10, 0.7);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px}
+.tut-mask.show{display:flex}
+.tut-box{width:100%;max-width:420px;background:#fdf9f1;background-image:repeating-linear-gradient(transparent, transparent 27px, rgba(184,150,62,0.12) 27px, rgba(184,150,62,0.12) 28px);border:1px solid #d4c5a9;border-radius:4px;padding:35px 28px 24px;box-shadow:0 20px 40px rgba(0,0,0,.4), inset 0 0 40px rgba(184,150,62,0.05);text-align:center;animation:tutIn .4s cubic-bezier(0.175, 0.885, 0.32, 1.275);position:relative;overflow:hidden;}
+.tut-box::before{content:'';position:absolute;top:0;right:0;border-width:0 40px 40px 0;border-style:solid;border-color:#e8dcc4 #fff #e8dcc4 #e8dcc4;background:#e8dcc4;box-shadow:0 2px 5px rgba(0,0,0,0.15);}
+@keyframes tutIn{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:none}}
+.tut-icon{font-size:48px;line-height:1;margin-bottom:12px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));}
+.tut-step{font-size:11px;letter-spacing:.2em;color:var(--ink3);font-family:var(--sf);margin-bottom:10px; font-weight:bold;}
+.tut-title{font-size:20px;font-weight:700;color:#5c4f3d;margin-bottom:16px;font-family:'Georgia','Noto Serif SC',serif;letter-spacing:1px;border-bottom:1px dashed rgba(184,150,62,0.3);padding-bottom:12px;}
+.tut-text{font-size:14px;line-height:1.93;color:#4a4035;min-height:170px;text-align:left;font-family:var(--sf);}
+.tut-text b{color:#8b2e2e;}
+.tut-text code{background:rgba(184,150,62,0.15);padding:2px 6px;border-radius:4px;color:#8b2e2e;font-family:monospace;font-size:12.5px;}
+.tut-dots{display:flex;gap:6px;justify-content:center;margin:26px 0 20px}
+.tut-dots span{width:6px;height:6px;border-radius:50%;background:rgba(184,150,62,0.3);transition:all .3s ease}
+.tut-dots span.on{background:var(--gold);width:22px;border-radius:3px}
+.tut-acts{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tut-skip{background:none;border:none;color:var(--ink3);font-size:13px;cursor:pointer;padding:8px 4px;transition:color 0.2s; font-family:var(--sf);}
+.tut-skip:hover{color:#8b2e2e;}
+.tut-next{flex:1;background:var(--gold);color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.1em;box-shadow:0 4px 12px rgba(184,150,62,0.3);transition:all 0.2s}
+.tut-next:hover{background:#a38230; transform:translateY(-2px);}
+.tut-next:active{transform:translateY(0); box-shadow:none;}backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:28px}
 .tut-mask.show{display:flex}
 .tut-box{width:100%;max-width:330px;background:var(--p2);border:1px solid var(--bd);border-radius:16px;padding:26px 24px 20px;box-shadow:0 18px 50px rgba(0,0,0,.3);text-align:center;animation:tutIn .3s ease}
 @keyframes tutIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
@@ -726,6 +775,37 @@ mark{background:rgba(184,150,62,.3);color:var(--gold)}
 .card-item.st-pushed { outline: 2px solid #66ccff !important; outline-offset: -2px; }
 [data-theme="dark"] .card-item.st-pushed { outline: 2px solid #3b82f6 !important; }
 
+/* 覆盖原有的卡片悬浮效果，使用更高级的弥散阴影 */
+.grid-layout .card-item:hover,
+.magazine-layout .card-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -6px var(--sh), 0 4px 8px -4px var(--sh) !important;
+  border-color: var(--bd) !important;
+}
+
+/* 给顶栏添加半透明毛玻璃特效 */
+.topbar, .secbar, .filterbar-wrap {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="dark"] .topbar, 
+[data-theme="dark"] .secbar, 
+[data-theme="dark"] .filterbar-wrap {
+  background: rgba(26, 26, 26, 0.75) !important;
+}
+
+/* 减弱卡片内部的分割线，让界面更干净 */
+.grid-layout .cinfo, 
+.magazine-layout .cinfo {
+  border-top: 1px solid var(--bd2) !important;
+}
+/* 输入框选中时，边框变化更柔和 */
+.sbox input:focus {
+  box-shadow: 0 0 0 3px var(--bd2) !important;
+  border-color: transparent !important;
+}
+
 </style>
 
 <!-- ============================================================
@@ -796,6 +876,72 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
     }
   };
 </script>
+
+<script id="zipWorkerCode" type="javascript/worker">
+  self.onmessage = function(e) {
+    if (e.data.type === 'build_zip') {
+      const files = e.data.files;
+      const crcTable = new Uint32Array(256).map((t, c) => {
+          let c_ = c;
+          for (let k = 0; k < 8; k++) c_ = c_ & 1 ? 0xEDB88320 ^ (c_ >>> 1) : c_ >>> 1;
+          return c_;
+      });
+      const crc32 = (u8) => {
+          let crc = 0xFFFFFFFF;
+          for (let i = 0; i < u8.length; i++) crc = crcTable[(crc ^ u8[i]) & 0xFF] ^ (crc >>> 8);
+          return (crc ^ 0xFFFFFFFF) >>> 0;
+      };
+      const encoder = new TextEncoder();
+      let zipData = [], cenDirs = [], offset = 0;
+      
+      for (let f of files) {
+          const nameBuf = encoder.encode(f.name);
+          let dataBuf;
+          // 兼容二进制与 Base64 文本
+          if (f.data instanceof Uint8Array) {
+              dataBuf = f.data;
+          } else if (typeof f.data === 'string' && f.base64) {
+              const binary = atob(f.data);
+              dataBuf = new Uint8Array(binary.length);
+              for (let i = 0; i < binary.length; i++) dataBuf[i] = binary.charCodeAt(i);
+          } else {
+              dataBuf = encoder.encode(f.data);
+          }
+          
+          const crc = crc32(dataBuf), len = dataBuf.length;
+          const head = new Uint8Array(30 + nameBuf.length);
+          const dv = new DataView(head.buffer);
+          dv.setUint32(0, 0x04034b50, true);
+          dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+          dv.setUint32(14, crc, true); dv.setUint32(18, len, true); dv.setUint32(22, len, true);
+          dv.setUint16(26, nameBuf.length, true); dv.setUint16(28, 0, true);
+          head.set(nameBuf, 30);
+          zipData.push(head, dataBuf);
+          
+          const cen = new Uint8Array(46 + nameBuf.length);
+          const cdv = new DataView(cen.buffer);
+          cdv.setUint32(0, 0x02014b50, true);
+          cdv.setUint16(4, 20, true); cdv.setUint16(6, 20, true); cdv.setUint16(8, 0, true); 
+          cdv.setUint32(16, crc, true); cdv.setUint32(20, len, true); cdv.setUint32(24, len, true);
+          cdv.setUint16(28, nameBuf.length, true); cdv.setUint32(42, offset, true);
+          cen.set(nameBuf, 46);
+          cenDirs.push(cen);
+          offset += head.length + dataBuf.length;
+      }
+      
+      let cenLen = 0; cenDirs.forEach(c => cenLen += c.length);
+      const end = new Uint8Array(22);
+      const edv = new DataView(end.buffer);
+      edv.setUint32(0, 0x06054b50, true);
+      edv.setUint16(8, files.length, true); edv.setUint16(10, files.length, true);
+      edv.setUint32(12, cenLen, true); edv.setUint32(16, offset, true);
+      
+      const blob = new Blob([...zipData, ...cenDirs, end], {type: 'application/zip'});
+      self.postMessage({ type: 'zip_result', id: e.data.id, blob: blob });
+    }
+  };
+</script>
+
 
 <script>
   // Service Worker 离线缓存与 PWA 注册逻辑
@@ -1160,6 +1306,9 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
       <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">
         已从酒馆获取角色列表。系统已自动比对本地卡库。
       </div>
+      <div class="inp-row" style="margin-bottom:10px;">
+        <input type="text" class="inp" id="tpSearchInp" placeholder="🔍 搜索云端角色名..." oninput="filterTavernPullList(this.value)" style="width:100%;">
+      </div>
       <div class="act-row" style="margin-bottom:10px;">
         <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="tpCheckSmart()">✨ 智能勾选 (本地缺失)</button>
         <button class="actbtn" onclick="tpCheckAll()">全选</button>
@@ -1182,6 +1331,9 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
     <div class="modal-body">
       <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">
         从云端读取到了以下备份。你可以单独勾选需要的卡片恢复到本地。
+      </div>
+      <div class="inp-row" style="margin-bottom:10px;">
+        <input type="text" class="inp" id="wdSearchInp" placeholder="🔍 搜索云端备份名..." oninput="filterWebdavPullList(this.value)" style="width:100%;">
       </div>
       <div class="act-row" style="margin-bottom:10px;">
         <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="wdCheckSmart()">✨ 智能勾选 (本地缺失)</button>
@@ -1252,7 +1404,8 @@ let S = {
   showFavOnly: false, sort: 'date_desc', layout: 'grid', theme: 'light',
   searchQuery: '', searchScopes: new Set(['name','desc','tags']), cards: [],
   selectMode: false, selectedIds: new Set(), timelineMode: false,
-  folderView: false, openFolderId: null, gridWidth: 130, fontScale: 1.25, showNote: true
+  folderView: false, openFolderId: null, gridWidth: 130, fontScale: 1.25, showNote: true,
+  chatlogs: [] // 新增：聊天记录库状态
 };
 
 
@@ -1384,7 +1537,9 @@ async function openDB() {
       if (!d.objectStoreNames.contains('cards')) d.createObjectStore('cards', { keyPath: 'id' });
       if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'key' });
       if (!d.objectStoreNames.contains('trash')) d.createObjectStore('trash', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('chatlogs')) d.createObjectStore('chatlogs', { keyPath: 'id' }); // 新增表	  
     };
+	
     req.onsuccess = (e) => { window.db = e.target.result; resolve(); };
     req.onerror = (e) => reject(e.target.error);
   });
@@ -1481,6 +1636,8 @@ async function init() {
 
   const mL = await dbG('meta', 'layout'); if (mL) applyLayout(mL.value, false);
   
+  
+  const mCl = await dbA('chatlogs').catch(()=>[]); S.chatlogs = mCl || []; // 挂载聊天记录
   const mGw = await dbG('meta', 'gridWidth');
   if (mGw) { S.gridWidth = parseInt(mGw.value, 10); document.documentElement.style.setProperty('--gw', S.gridWidth + 'px'); const gz = document.getElementById('gridZoom'); if (gz) gz.value = S.gridWidth; const gzv = document.getElementById('gridZoomVal'); if (gzv) gzv.textContent = S.gridWidth; } else { const gzv = document.getElementById('gridZoomVal'); if (gzv) gzv.textContent = S.gridWidth; }
 
@@ -2487,12 +2644,19 @@ async function pushCardToTavern(id) {
     let targetAvatar = existChar ? existChar.avatar : `${safeName}.png`;
     
     if (existChar) {
-        document.getElementById('busySub').textContent = `正在清理旧版本...`;
-        await fetch(tavernProxy + '/api/characters/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ avatar_url: existChar.avatar })
-        }).catch(e => console.warn(e));
+        let isOverwrite = confirm(`酒馆中已存在同名角色 [${c.name}]。\n\n▶ 点击【确定】覆盖旧版（同步更新世界书等设定）。\n▶ 点击【取消】保留两者（将作为独立的 IF 线新角色推送）。`);
+        
+        if (isOverwrite) {
+            document.getElementById('busySub').textContent = `正在清理旧版本...`;
+            await fetch(tavernProxy + '/api/characters/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ avatar_url: existChar.avatar })
+            }).catch(e => console.warn(e));
+        } else {
+            // 选择取消时：保留两者，生成全新的头像文件名，避免任何冲突
+            targetAvatar = `${safeName}_IF_${Date.now()}.png`;
+        }
     }
 
     document.getElementById('busySub').textContent = `正在写入新版本...`;
@@ -2523,7 +2687,7 @@ async function pullFromTavern() {
   showBusy('请求酒馆数据', '正在获取远端角色列表...', 0.2);
   
   try {
-    let resp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', body: JSON.stringify({}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
+    let resp = await fetch(tavernProxy + '/api/characters/all', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({shallow: true}) }).catch(()=>fetch(tavernProxy + '/api/characters/all'));
     if(!resp.ok) throw new Error(`服务端返回 ${resp.status}`);
     
     let list = await resp.json();
@@ -2546,14 +2710,16 @@ async function pullFromTavern() {
   } catch(e) { hideBusy(); alert("拉取异常：" + e.message); }
 }
 
+let _tpAvatarObs = null;
 function renderTavernPullUI() {
     const listEl = document.getElementById('tpList');
     if(!_tavernPullList.length) { listEl.innerHTML = '<div style="padding:20px;text-align:center;color:var(--ink3);font-size:12px;">酒馆里目前没有卡片</div>'; return; }
+    
     listEl.innerHTML = _tavernPullList.map((c, idx) => `
         <label style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--bd2); cursor:pointer; transition:background .2s;">
             <input type="checkbox" class="tp-checkbox" data-idx="${idx}" ${c.isNew ? 'checked' : ''} style="margin-right:12px; width:16px; height:16px;">
             <div style="width:40px; height:40px; border-radius:50%; background:var(--p3); margin-right:12px; overflow:hidden; border:1px solid var(--bd);">
-                <img src="${tavernProxy}/characters/${c.avatar}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'">
+                <img data-avatar="${esc(c.avatar||'')}" class="tp-avatar" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'">
             </div>
             <div style="flex:1;">
                 <div style="font-size:13px; font-weight:bold; color:var(--ink);">${esc(c.name)}</div>
@@ -2561,11 +2727,40 @@ function renderTavernPullUI() {
             </div>
         </label>
     `).join('');
+
+    if(_tpAvatarObs) _tpAvatarObs.disconnect();
+    _tpAvatarObs = new IntersectionObserver((ents) => {
+        ents.forEach(en => {
+            if(en.isIntersecting){
+                const img = en.target;
+                const av = img.dataset.avatar;
+                if(av){
+                    img.removeAttribute('data-avatar');
+                    fetch(tavernProxy + '/characters/' + encodeURIComponent(av))
+                        .then(r => r.blob())
+                        .then(b => { img.src = URL.createObjectURL(b); })
+                        .catch(() => { img.style.display = 'none'; });
+                }
+                _tpAvatarObs.unobserve(img);
+            }
+        });
+    }, { root: listEl, rootMargin: '200px' });
+    
+    listEl.querySelectorAll('.tp-avatar').forEach(img => _tpAvatarObs.observe(img));
 }
 
-function tpCheckSmart() { document.querySelectorAll('.tp-checkbox').forEach(cb => { cb.checked = _tavernPullList[cb.dataset.idx].isNew; }); }
-function tpCheckAll() { document.querySelectorAll('.tp-checkbox').forEach(cb => cb.checked = true); }
-function tpCheckNone() { document.querySelectorAll('.tp-checkbox').forEach(cb => cb.checked = false); }
+// ✨ 新增：Tavern 拉取列表的无感搜索过滤
+function filterTavernPullList(query) {
+    const q = query.trim().toLowerCase();
+    document.querySelectorAll('#tpList label').forEach(lbl => {
+        // 动态隐藏不匹配的项
+        lbl.style.display = lbl.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+}
+// ✨ 优化：快捷勾选按钮只对搜索过滤后【当前可见】的卡片生效，避免误操作
+function tpCheckSmart() { document.querySelectorAll('#tpList label').forEach(lbl => { if (lbl.style.display !== 'none') { const cb = lbl.querySelector('.tp-checkbox'); cb.checked = _tavernPullList[cb.dataset.idx].isNew; } }); }
+function tpCheckAll() { document.querySelectorAll('#tpList label').forEach(lbl => { if (lbl.style.display !== 'none') lbl.querySelector('.tp-checkbox').checked = true; }); }
+function tpCheckNone() { document.querySelectorAll('#tpList label').forEach(lbl => { if (lbl.style.display !== 'none') lbl.querySelector('.tp-checkbox').checked = false; }); }
 
 async function executeTavernPull() {
     const selectedIdxs = Array.from(document.querySelectorAll('.tp-checkbox:checked')).map(cb => parseInt(cb.dataset.idx));
@@ -2632,7 +2827,15 @@ async function executeTavernPull() {
                 charCount: finalDesc.length, groupId: '', dialogEntries: dlgs, worldBookEntries: wbEntries, presetEntries: pres
              };
              
-             if (target.localId) await dbD('cards', target.localId);
+             if (target.localId) {
+                 let isOverwrite = confirm(`本地卡库中已存在同名卡片 [${newCard.name}]。\n\n▶ 点击【确定】覆盖本地旧版。\n▶ 点击【取消】保留两者（将作为独立的新版本/IF线存入卡库）。`);
+                 if (isOverwrite) {
+                     await dbD('cards', target.localId);
+                     newCard.id = target.localId; // 覆盖模式：保持原有底层 ID 不变
+                 } else {
+                     newCard.name = newCard.name + ' (IF分支)'; // 保留两者模式：加个后缀方便你区分
+                 }
+             }
              await dbP('cards', newCard); pullOk++;
         } catch(ex) {}
     }
@@ -2975,54 +3178,38 @@ async function exportFolder(gid) {
   });
 }
 
-// 【新增功能】1. 纯原生无依赖 ZIP 打包引擎
-const buildZip = async (files) => {
-    const crcTable = new Uint32Array(256).map((t, c) => {
-        let c_ = c;
-        for (let k = 0; k < 8; k++) c_ = c_ & 1 ? 0xEDB88320 ^ (c_ >>> 1) : c_ >>> 1;
-        return c_;
-    });
-    const crc32 = (u8) => {
-        let crc = 0xFFFFFFFF;
-        for (let i = 0; i < u8.length; i++) crc = crcTable[(crc ^ u8[i]) & 0xFF] ^ (crc >>> 8);
-        return (crc ^ 0xFFFFFFFF) >>> 0;
-    };
-    const encoder = new TextEncoder();
-    let zipData = [], cenDirs = [], offset = 0;
-    
-    for (let f of files) {
-        const nameBuf = encoder.encode(f.name);
-        const dataBuf = f.data instanceof Uint8Array ? f.data : encoder.encode(f.data);
-        const crc = crc32(dataBuf), len = dataBuf.length;
-        
-        const head = new Uint8Array(30 + nameBuf.length);
-        const dv = new DataView(head.buffer);
-        dv.setUint32(0, 0x04034b50, true);
-        dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
-        dv.setUint32(14, crc, true); dv.setUint32(18, len, true); dv.setUint32(22, len, true);
-        dv.setUint16(26, nameBuf.length, true); dv.setUint16(28, 0, true);
-        head.set(nameBuf, 30);
-        zipData.push(head, dataBuf);
-        
-        const cen = new Uint8Array(46 + nameBuf.length);
-        const cdv = new DataView(cen.buffer);
-        cdv.setUint32(0, 0x02014b50, true);
-        cdv.setUint16(4, 20, true); cdv.setUint16(6, 20, true); cdv.setUint16(8, 0, true); 
-        cdv.setUint32(16, crc, true); cdv.setUint32(20, len, true); cdv.setUint32(24, len, true);
-        cdv.setUint16(28, nameBuf.length, true); cdv.setUint32(42, offset, true);
-        cen.set(nameBuf, 46);
-        cenDirs.push(cen);
-        offset += head.length + dataBuf.length;
+let zipWorker;
+let zipWorkerResolvers = {};
+
+function initZipWorker() {
+  if (zipWorker) return;
+  const zipBlob = new Blob([document.getElementById('zipWorkerCode').textContent], { type: 'application/javascript' });
+  zipWorker = new Worker(URL.createObjectURL(zipBlob));
+  zipWorker.onmessage = (e) => {
+    if (e.data.type === 'zip_result') {
+      const resolve = zipWorkerResolvers[e.data.id];
+      if (resolve) { resolve(e.data.blob); delete zipWorkerResolvers[e.data.id]; }
     }
+  };
+}
+
+// 【新增功能】1. 纯原生无依赖 ZIP 打包引擎 (已升级为 Web Worker 异步版)
+const buildZip = async (files) => {
+  initZipWorker();
+  return new Promise(resolve => {
+    const id = Date.now() + '_' + Math.random();
+    zipWorkerResolvers[id] = resolve;
     
-    let cenLen = 0; cenDirs.forEach(c => cenLen += c.length);
-    const end = new Uint8Array(22);
-    const edv = new DataView(end.buffer);
-    edv.setUint32(0, 0x06054b50, true);
-    edv.setUint16(8, files.length, true); edv.setUint16(10, files.length, true);
-    edv.setUint32(12, cenLen, true); edv.setUint32(16, offset, true);
+    // 传递给 Worker 时，标注哪些是 base64 文本需要解码
+    const sanitizedFiles = files.map(f => {
+        if (typeof f.data === 'string') {
+            return { name: f.name, data: f.data, base64: true };
+        }
+        return f;
+    });
     
-    return new Blob([...zipData, ...cenDirs, end], {type: 'application/zip'});
+    zipWorker.postMessage({ type: 'build_zip', id: id, files: sanitizedFiles });
+  });
 };
 
 // 【新增功能】2. AndroidDL 流式分块备份引擎
@@ -3675,9 +3862,17 @@ async function syncPull() {
   } catch(e) { hideBusy(); alert("拉取异常：" + e.message); }
 }
 
-function wdCheckSmart() { document.querySelectorAll('.wd-checkbox').forEach(cb => { cb.checked = _wdPullList[cb.dataset.idx].isNew; }); }
-function wdCheckAll() { document.querySelectorAll('.wd-checkbox').forEach(cb => cb.checked = true); }
-function wdCheckNone() { document.querySelectorAll('.wd-checkbox').forEach(cb => cb.checked = false); }
+// ✨ 新增：WebDAV 拉取列表的无感搜索过滤
+function filterWebdavPullList(query) {
+    const q = query.trim().toLowerCase();
+    document.querySelectorAll('#wdList label').forEach(lbl => {
+        lbl.style.display = lbl.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+}
+// ✨ 优化：WebDAV 快捷勾选按钮也只对【当前可见】的项生效
+function wdCheckSmart() { document.querySelectorAll('#wdList label').forEach(lbl => { if (lbl.style.display !== 'none') { const cb = lbl.querySelector('.wd-checkbox'); cb.checked = _wdPullList[cb.dataset.idx].isNew; } }); }
+function wdCheckAll() { document.querySelectorAll('#wdList label').forEach(lbl => { if (lbl.style.display !== 'none') lbl.querySelector('.wd-checkbox').checked = true; }); }
+function wdCheckNone() { document.querySelectorAll('#wdList label').forEach(lbl => { if (lbl.style.display !== 'none') lbl.querySelector('.wd-checkbox').checked = false; }); }
 
 async function executeWebdavPull() {
     const selectedIdxs = Array.from(document.querySelectorAll('.wd-checkbox:checked')).map(cb => parseInt(cb.dataset.idx));
@@ -3872,17 +4067,29 @@ function toggleFav(id) {
 
 let tutStep = 0;
 const tutSteps = [
-  {icon:'📇', t:'欢迎使用卡库 4.0', c:'这里是极致轻量的只读预览归档系统，完全本地化，防污染隔离。'},
-  {icon:'🧩', t:'新增组件：双视图', c:'PC大屏支持左右双视图，左侧查列表，右侧秒看详情，如原生般丝滑。'},
-  {icon:'☁️', t:'神级功能：对接收酒馆', c:'配置好 Cloudflare Worker 代理，右键就可一键推送热更新注入角色。从此告别传来传去的烦恼！'},
-  {icon:'📦', t:'无限容量引擎', c:'独创 IndexedDB 懒加载架构，1 万张卡完全不卡顿，更不用担心 OOM 崩溃。'},
-  {icon:'🔍', t:'拼音与高级语法', c:'输入框直接支持首字母缩写。还可以尝试输入「tag:傲娇 char>5000」来高级查询。'},
-  {icon:'🚀', t:'即刻开启', c:'你可以将此页添加书签或者用浏览器的【添加到主屏幕】将它变成应用。一切数据尽在掌握之中。'}
+  {icon:'💌', t:'致AIRP玩家的信', c:'欢迎来到 Marie's Chest！<br><br>这是一封来自开发者的简短指南。这里是你的专属角色收纳馆，一个完全本地化、支持云端双向同步的极致轻量级管理工具。接下来，让我带你快速熟悉它的全貌。'},
+  {icon:'📥', t:'一、轻松导入与导出', c:'基础操作非常直观：<br>1. <b>导入</b>：你可以点击右下角的 <b>＋</b> 号，或者直接将 <b>PNG / WEBP / JSON / DOCX</b> 格式的角色文件<b>拖拽到网页内</b>即可导入。<br>2. <b>导出</b>：在卡片列表勾选多张卡片，点击底部【打包导出】；或在卡片详情页点击【↑ 导出】进行单卡保存。'},
+  {icon:'🏷️', t:'二、精细化整理', c:'你的卡片再也不会乱糟糟：<br>1. <b>标签与分组</b>：在详情页中为卡片添加主标签、小标签（支持如 <i>设定/种族</i> 的树状结构），或分配<b>文件夹（分组）</b>。<br>2. <b>批量操作</b>：点击顶部【选择】进入多选模式，一键为几十张卡片打标签或移动分区。'},
+  {icon:'☁️', t:'三、酒馆无缝互联', c:'这是卡库的杀手锏功能！<br>在右侧【≡ 设置】中配置好 <b>Tavern API Proxy</b> 后：<br>你可以将修改后的卡片<b>一键推送到酒馆</b>，或者通过【↓ 从酒馆批量拉取】将云端的新角色同步回本地。无须反复下载上传文件！'},
+  {icon:'🔄', t:'四、WebDAV 云端同步', c:'害怕数据丢失或想多端同步？<br>在【设置】中绑定你的坚果云或支持 <b>WebDAV</b> 的网盘。<br>你可以实现卡库数据的<b>增量静默同步</b>。换一台电脑，登录网盘点击【↓ 从云端拉取】，所有卡片连同设定瞬间恢复！'},
+  {icon:'🔍', t:'五、高级智能搜索', c:'找卡就像呼吸一样自然：<br>顶部的搜索框支持<b>拼音首字母</b>自动补全。<br>你可以使用高级语法组合搜索，例如输入：<br><code>龙 tag:西幻 char>3000</code><br>（意为：名字带龙、且包含西幻标签、且字数大于3000字）。'},
+  {icon:'📖', t:'六、沉浸阅览与对白', c:'1. <b>双栏视图</b>：如果你使用大屏，点击卡片即可在右侧展开详情，左侧列表不干扰。<br>2. <b>全屏阅读</b>：点击简介或世界书右上角的【⛶ 全屏阅读】，即可享受无干扰沉浸阅读。<br>3. <b>对话记录</b>：支持导入 .txt 等聊天记录，并绑定给特定角色卡。'},
+  {icon:'🛡️', t:'七、数据安全第一', c:'误删了心爱的卡片？别担心！<br>点击顶部导航栏红色的 <b>🗑️ 垃圾桶</b> 图标，所有删除的卡片都会在回收站中为你保留，随时可以【撤销恢复】。<br><br><b>准备好了吗？点击下方按钮，开始你的收纳之旅吧！</b>'}
 ];
 function maybeShowTutorial() { if(!localStorage.getItem('kakuV4Tut')) setTimeout(()=>document.getElementById('tutMask').classList.add('show'), 800); }
-function tutNext() { if(tutStep === tutSteps.length-1) return endTutorial(); tutStep++; const s = tutSteps[tutStep]; document.getElementById('tutIcon').innerText = s.icon; document.getElementById('tutTitle').innerText = s.t; document.getElementById('tutText').innerText = s.c; document.getElementById('tutStep').innerText = (tutStep+1)+' / '+tutSteps.length; document.getElementById('tutDots').innerHTML = tutSteps.map((_, i)=>`<span class="${i===tutStep?'on':''}"></span>`).join(''); if(tutStep === tutSteps.length-1) document.getElementById('tutNext').innerText = '开始整理'; }
+function tutNext() { 
+  if(tutStep === tutSteps.length-1) return endTutorial(); 
+  tutStep++; 
+  const s = tutSteps[tutStep]; 
+  document.getElementById('tutIcon').innerHTML = s.icon; 
+  document.getElementById('tutTitle').innerHTML = s.t; 
+  document.getElementById('tutText').innerHTML = s.c; // 改为了innerHTML以支持加粗和换行
+  document.getElementById('tutStep').innerText = (tutStep+1)+' / '+tutSteps.length; 
+  document.getElementById('tutDots').innerHTML = tutSteps.map((_, i)=>`<span class="${i===tutStep?'on':''}"></span>`).join(''); 
+  if(tutStep === tutSteps.length-1) document.getElementById('tutNext').innerText = '开始整理'; 
+}
 function endTutorial() { document.getElementById('tutMask').classList.remove('show'); localStorage.setItem('kakuV4Tut','1'); }
-function replayTutorial() { tutStep = 0; document.getElementById('tutNext').innerText = '下一步'; closeModal('settingsModal'); tutNext(); document.getElementById('tutMask').classList.add('show'); tutStep--; tutNext(); }
+function replayTutorial() { tutStep = -1; document.getElementById('tutNext').innerText = '下一步'; closeModal('settingsModal'); document.getElementById('tutMask').classList.add('show'); tutNext(); }
 
 const scopeMap = { 'name': '卡名', 'desc': '简介', 'tags': '标签', 'world': '世界书', 'dialog': '对白', 'note': '备注' };
 function bindEvents() {
@@ -4763,6 +4970,198 @@ window.fixWbKeys = function(id, idx) {
         });
     });
 };
+
+// ============================================================
+// 聊天记录管理 (TXT & JSONL 解析与绑定)
+// ============================================================
+async function handleChatlogFiles(files) {
+    if(!files || !files.length) return;
+    let added = 0;
+    showBusy('正在导入', '解析聊天记录中...', 0.5);
+    for(const f of files) {
+        try {
+            const raw = await new Promise((res, rej) => {
+                const rd = new FileReader();
+                rd.onload = e => res(e.target.result);
+                rd.onerror = e => rej(e);
+                rd.readAsText(f, 'utf-8');
+            });
+            const ext = f.name.split('.').pop().toLowerCase();
+            const log = {
+                id: 'cl_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+                name: f.name,
+                type: ext,
+                raw,
+                boundCardId: null,
+                importedAt: Date.now()
+            };
+            await dbP('chatlogs', log);
+            S.chatlogs.push(log);
+            added++;
+        } catch(e) { console.warn('读取失败: ' + f.name); }
+    }
+    hideBusy();
+    if(added > 0) {
+        renderChatlogLib();
+        showToast('成功导入 ' + added + ' 条记录');
+        const newLogs = S.chatlogs.slice(-added);
+        if(newLogs.length === 1) openChatlogBind(newLogs[0].id);
+    }
+    document.getElementById('chatlogInput').value = '';
+}
+
+function renderChatlogLib() {
+    const el = document.getElementById('chatlogLib'); if(!el) return;
+    if(!S.chatlogs.length) { el.innerHTML = '<div style="font-size:11px;color:var(--ink4);padding:8px 0">还没有聊天记录，点下方按钮导入</div>'; return; }
+    el.innerHTML = S.chatlogs.map(log => {
+        const card = S.cards.find(c => c.id === log.boundCardId);
+        const bindStr = card ? `已绑定：${esc(card.name)}` : '未绑定';
+        return `<div class="wb-entry" style="padding: 6px; background: var(--p3); border-radius: var(--r);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:12px; font-weight:bold; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(log.name)}</div>
+                    <div style="font-size:9px; color:var(--ink3);">${bindStr}</div>
+                </div>
+                <div style="display:flex; gap:4px; flex-shrink:0;">
+                    <button class="expand-btn" onclick="openChatlogBind('${log.id}')">绑定</button>
+                    <button class="expand-btn" onclick="openChatlogView('${log.id}', '${log.boundCardId}')">📖 阅览</button>
+                    <button class="expand-btn" style="color:var(--red); border-color:rgba(139,46,46,0.3);" onclick="deleteChatlog('${log.id}')">✕</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function openChatlogBind(logId) {
+    const log = S.chatlogs.find(l => l.id === logId); if(!log) return;
+    const keyword = log.name.replace(/\.\w+$/, '').replace(/[\d_\-\s\.]/g, '').slice(0, 10).toLowerCase();
+    const sorted = [...S.cards.filter(c => !c.parentId)].sort((a,b) => {
+        const as = keyword && a.name.toLowerCase().includes(keyword) ? -1 : 0;
+        const bs = keyword && b.name.toLowerCase().includes(keyword) ? -1 : 0;
+        return as - bs;
+    });
+    
+    document.getElementById('pickTitle').textContent = '绑定到角色卡';
+    document.getElementById('pickBody').innerHTML = `
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px">为「${esc(log.name)}」选择角色卡：</div>
+        <div class="inp-row" style="margin-bottom:8px">
+            <input type="text" class="inp" placeholder="搜索角色名..." oninput="filterChatlogBind(this.value, '${logId}')" style="width:100%">
+        </div>
+        <div id="chatlogBindList" style="max-height:40vh; overflow-y:auto; border:1px solid var(--bd2); border-radius:var(--r);">
+            ${sorted.map(c => `<div class="pick-item ${c.id === log.boundCardId ? 'active' : ''}" style="${c.id === log.boundCardId ? 'background:var(--gold);color:#fff;' : ''}" onclick="doChatlogBind('${logId}', '${c.id}')">${esc(c.name)}</div>`).join('')}
+        </div>
+        <div class="pick-item" style="color:var(--ink4); text-align:center; margin-top:8px;" onclick="doChatlogBind('${logId}', null)">── 解除绑定 ──</div>`;
+    window._clBindAllCards = sorted; window._clBindLogId = logId;
+    openModal('pickModal');
+}
+
+function filterChatlogBind(q, logId) {
+    const kw = q.trim().toLowerCase();
+    const log = S.chatlogs.find(l => l.id === logId);
+    const filtered = kw ? window._clBindAllCards.filter(c => c.name.toLowerCase().includes(kw)) : window._clBindAllCards;
+    document.getElementById('chatlogBindList').innerHTML = filtered.map(c => `<div class="pick-item" style="${c.id === (log&&log.boundCardId) ? 'background:var(--gold);color:#fff;' : ''}" onclick="doChatlogBind('${logId}', '${c.id}')">${esc(c.name)}</div>`).join('');
+}
+
+async function doChatlogBind(logId, cardId) {
+    const log = S.chatlogs.find(l => l.id === logId); if(!log) return;
+    log.boundCardId = cardId || null;
+    await dbP('chatlogs', log);
+    closeModal('pickModal'); renderChatlogLib();
+    showToast(cardId ? '记录绑定成功！' : '记录已解绑');
+}
+
+async function deleteChatlog(logId) {
+    if(!await confirmDialog('确定要删除这条聊天记录吗？', {danger:true})) return;
+    await dbD('chatlogs', logId);
+    S.chatlogs = S.chatlogs.filter(l => l.id !== logId);
+    renderChatlogLib(); showToast('聊天记录已删除');
+}
+
+let _clviewObserver = null;
+
+function openChatlogView(logId, cardId) {
+    const log = S.chatlogs.find(l => l.id === logId); if(!log || !log.raw) return;
+    const card = S.cards.find(c => c.id === cardId);
+    const charName = card ? card.name : '角色';
+    
+    let msgs = [];
+    if(log.type === 'jsonl' || log.raw.includes('{"mes":')) {
+        log.raw.split('\n').forEach(line => {
+            const s = line.trim(); if(!s) return;
+            try { const obj = JSON.parse(s); if(obj && typeof obj.mes === 'string') msgs.push({isUser: !!obj.is_user, name: obj.name || '', text: obj.mes}); } catch(e){}
+        });
+    } else {
+        // TXT 简单切分
+        const lines = log.raw.split(/\r?\n/);
+        let cur = null;
+        for(const line of lines) {
+            const m = line.match(/^\s*([^：:\n]{1,20})\s*[：:]\s*(.*)$/);
+            if(m && m[1].trim()) {
+                if(cur) msgs.push(cur);
+                const nm = m[1].trim();
+                cur = { isUser: /^(user|你|我|用户)$/i.test(nm), name: nm, text: m[2] || '' };
+            } else if(cur) {
+                cur.text += '\n' + line;
+            }
+        }
+        if(cur) msgs.push(cur);
+    }
+    
+    const container = document.getElementById('clviewBody');
+    container.innerHTML = '';
+    
+    if(!msgs.length) {
+        container.innerHTML = `<div class="cbox" style="background:transparent; border:none; padding:0;">${esc(log.raw.trim() || '空记录')}</div>`;
+        openModal('clviewModal');
+        return;
+    }
+
+    // 分块渲染逻辑 (Infinite Scroll)
+    let renderIndex = 0;
+    const CHUNK_SIZE = 100; // 每次滑到底部加载 100 条
+    
+    const renderChunk = () => {
+        const fragment = document.createDocumentFragment();
+        const end = Math.min(renderIndex + CHUNK_SIZE, msgs.length);
+        for(let i = renderIndex; i < end; i++) {
+            const m = msgs[i];
+            if(!m.text.trim()) continue;
+            const isU = m.isUser;
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `chat-msg ${isU ? 'chat-user' : 'chat-char'}`;
+            msgDiv.innerHTML = `<div class="chat-name">${esc(isU ? 'User' : (m.name || charName))}</div>${esc(m.text)}`;
+            fragment.appendChild(msgDiv);
+        }
+        renderIndex = end;
+        
+        // 移除旧的触底探测器
+        const oldTrigger = container.querySelector('.scroll-trigger');
+        if(oldTrigger) oldTrigger.remove();
+        
+        container.appendChild(fragment);
+        
+        // 如果数据还没渲染完，在底部埋入一个新的探测器
+        if(renderIndex < msgs.length) {
+            const trigger = document.createElement('div');
+            trigger.className = 'scroll-trigger';
+            trigger.style.height = '20px';
+            container.appendChild(trigger);
+            if(_clviewObserver) _clviewObserver.observe(trigger);
+        }
+    };
+
+    // 重置侦听器
+    if(_clviewObserver) _clviewObserver.disconnect();
+    _clviewObserver = new IntersectionObserver((entries) => {
+        if(entries[0].isIntersecting) {
+            renderChunk();
+        }
+    }, { root: container, rootMargin: '100px' });
+
+    renderChunk();
+    openModal('clviewModal');
+}
+
 // ==========================================
 // 核心工具：将最新数据完美打包成酒馆原生 V2 PNG 卡片
 // ==========================================
