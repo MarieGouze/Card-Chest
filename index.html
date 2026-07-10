@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#F5F0E8">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
-<link rel="manifest" id="pwaManifest" href='data:application/manifest+json,{"name":"Marie's Chest","short_name":"CardChest","display":"standalone","start_url":"./","background_color":"#F5F0E8","theme_color":"#F5F0E8"}'>
+<link rel="manifest" id="pwaManifest" href='data:application/manifest+json,{"name":"Maries Chest","short_name":"CardChest","display":"standalone","start_url":"./","background_color":"#F5F0E8","theme_color":"#F5F0E8"}'>
 
 <script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=mbRwF461Nqb6mXhpHWYsbQR-33L-xf_YJ94JHoF5Y4hforxs8VOxPLXv5MbseqLWpRzD87nVsUQoQ5GOYo2wLJLmgTx3seDU_UugAn2kS_cRUIGyA3HsJEmFEHa65VvK36eBxlv5J-YbSf0cf5y4Bk9OYmPZ69KYeWU2A5rvskpPB_ixbolLgbAdg95HBApxHetXH8l3OKyFO48DDGqkL5FWTL675V4gQLbXtHj6cFTvUMEmxEgCBqWPtgnLq8e_dwEahozuOWqEICkaER-lcg" charset="UTF-8"></script><style>
 /* =======================================
@@ -944,8 +944,8 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 
 <script>
-  // Service Worker 离线缓存与 PWA 注册逻辑
-  if ('serviceWorker' in navigator) {
+  // Service Worker 离线缓存与 PWA 注册逻辑（仅在服务器环境启用，本地双击则跳过）
+  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
     const swCode = `
       const CACHE_NAME = 'kaku-v4-cache';
       const urlsToCache = [ './', 'index.html' ]; // 简单骨架缓存
@@ -1460,29 +1460,74 @@ let workerResolvers = {};
 let latestSearchReqId = 0;
 
 function initWorkers() {
-  const hashBlob = new Blob([document.getElementById('workerCode').textContent], { type: 'application/javascript' });
-  worker = new Worker(URL.createObjectURL(hashBlob));
-  worker.onmessage = (e) => {
-    if (e.data.type === 'hash_result') {
-      const resolve = workerResolvers[e.data.id];
-      if (resolve) { resolve(e.data.hash); delete workerResolvers[e.data.id]; }
-    }
-  };
+  try {
+    const hashBlob = new Blob([document.getElementById('workerCode').textContent], { type: 'application/javascript' });
+    worker = new Worker(URL.createObjectURL(hashBlob));
+    worker.onmessage = (e) => {
+      if (e.data.type === 'hash_result') {
+        const resolve = workerResolvers[e.data.id];
+        if (resolve) { resolve(e.data.hash); delete workerResolvers[e.data.id]; }
+      }
+    };
 
-  const searchBlob = new Blob([document.getElementById('searchWorkerCode').textContent], { type: 'application/javascript' });
-  searchWorker = new Worker(URL.createObjectURL(searchBlob));
-  searchWorker.onmessage = (e) => {
-    const { type, reqId, ids } = e.data;
-    // 丢弃非最新的搜索返回结果，防止乱序抖动
-    if (type === 'search_result' && reqId === latestSearchReqId) {
-      const idSet = new Set(ids);
-      vsState.list = S.cards.filter(c => c.section === S.activeSection && idSet.has(c.id));
-      sortList(vsState.list);
-      updateGridAfterSearch();
-    }
-  };
+    const searchBlob = new Blob([document.getElementById('searchWorkerCode').textContent], { type: 'application/javascript' });
+    searchWorker = new Worker(URL.createObjectURL(searchBlob));
+    searchWorker.onmessage = (e) => {
+      const { type, reqId, ids } = e.data;
+      if (type === 'search_result' && reqId === latestSearchReqId) {
+        const idSet = new Set(ids);
+        vsState.list = S.cards.filter(c => c.section === S.activeSection && idSet.has(c.id));
+        sortList(vsState.list);
+        updateGridAfterSearch();
+      }
+    };
+  } catch(e) {
+    console.warn("由于本地双击打开，受限于浏览器安全策略，已自动降级为兼容模式。");
+    // 本地降级：直接用主程序替代多线程运算
+    worker = {
+      postMessage: async (data) => {
+        let hashHex = '';
+        const str = data.payload;
+        if (window.crypto && window.crypto.subtle) {
+          try {
+            const buf = new TextEncoder().encode(str);
+            const hashBuffer = await window.crypto.subtle.digest('SHA-256', buf);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          } catch(err) {}
+        }
+        if (!hashHex) {
+          let h = 5381;
+          for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+          hashHex = (h >>> 0).toString(16);
+        }
+        setTimeout(() => worker.onmessage({ data: { type: 'hash_result', id: data.id, hash: hashHex } }), 0);
+      }
+    };
+    
+    searchWorker = {
+      postMessage: (data) => {
+        const { type, query, list, scopes, reqId } = data;
+        if (!query.trim()) { setTimeout(() => searchWorker.onmessage({ data: { type: 'search_result', reqId, ids: list.map(c=>c.id) } }), 0); return; }
+        const queries = query.trim().split(/\s+/);
+        const filtered = list.filter(c => {
+          return queries.every(token => {
+            const lowerToken = token.toLowerCase();
+            if (lowerToken.startsWith('tag:')) { const tName = lowerToken.slice(4); return [...(c.tags || []), ...(c.subtags || [])].some(t => (t || '').toLowerCase().includes(tName)); }
+            if (lowerToken.startsWith('char>')) return (c.charCount || 0) > parseInt(lowerToken.slice(5)) || 0;
+            if (lowerToken.startsWith('char<')) return (c.charCount || 0) < parseInt(lowerToken.slice(5)) || 9999999;
+            if (scopes.has('name') && (c.name || '').toLowerCase().includes(lowerToken)) return true;
+            if (scopes.has('desc') && (c.description || '').toLowerCase().includes(lowerToken)) return true;
+            if (scopes.has('tags') && [...(c.tags || []), ...(c.subtags || [])].some(t => (t || '').toLowerCase().includes(lowerToken))) return true;
+            if (scopes.has('note') && (c.note || '').toLowerCase().includes(lowerToken)) return true;
+            return false;
+          });
+        });
+        setTimeout(() => searchWorker.onmessage({ data: { type: 'search_result', reqId, ids: filtered.map(c=>c.id) } }), 0);
+      }
+    };
+  }
 }
-
 async function asyncHash(obj) {
   if (!worker) initWorkers();
   return new Promise(resolve => {
@@ -1531,7 +1576,7 @@ function sortList(list) {
 // ============================================================
 async function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1); // 提版
+    const req = indexedDB.open(DB_NAME, 2); // 升级到版本2，确保新增表生效
     req.onupgradeneeded = (e) => {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('cards')) d.createObjectStore('cards', { keyPath: 'id' });
@@ -4067,7 +4112,7 @@ function toggleFav(id) {
 
 let tutStep = 0;
 const tutSteps = [
-  {icon:'💌', t:'致AIRP玩家的信', c:'欢迎来到 Marie's Chest！<br><br>这是一封来自开发者的简短指南。这里是你的专属角色收纳馆，一个完全本地化、支持云端双向同步的极致轻量级管理工具。接下来，让我带你快速熟悉它的全貌。'},
+  {icon:'💌', t:'致AIRP玩家的信', c:"欢迎来到 Marie's Chest！<br><br>这是一封来自开发者的简短指南。这里是你的专属角色收纳馆，一个完全本地化、支持云端双向同步的极致轻量级管理工具。接下来，让我带你快速熟悉它的全貌。"},
   {icon:'📥', t:'一、轻松导入与导出', c:'基础操作非常直观：<br>1. <b>导入</b>：你可以点击右下角的 <b>＋</b> 号，或者直接将 <b>PNG / WEBP / JSON / DOCX</b> 格式的角色文件<b>拖拽到网页内</b>即可导入。<br>2. <b>导出</b>：在卡片列表勾选多张卡片，点击底部【打包导出】；或在卡片详情页点击【↑ 导出】进行单卡保存。'},
   {icon:'🏷️', t:'二、精细化整理', c:'你的卡片再也不会乱糟糟：<br>1. <b>标签与分组</b>：在详情页中为卡片添加主标签、小标签（支持如 <i>设定/种族</i> 的树状结构），或分配<b>文件夹（分组）</b>。<br>2. <b>批量操作</b>：点击顶部【选择】进入多选模式，一键为几十张卡片打标签或移动分区。'},
   {icon:'☁️', t:'三、酒馆无缝互联', c:'这是卡库的杀手锏功能！<br>在右侧【≡ 设置】中配置好 <b>Tavern API Proxy</b> 后：<br>你可以将修改后的卡片<b>一键推送到酒馆</b>，或者通过【↓ 从酒馆批量拉取】将云端的新角色同步回本地。无须反复下载上传文件！'},
