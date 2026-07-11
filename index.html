@@ -370,7 +370,7 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 ======================================= */
 .main-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth; position:relative; width:100%;}
 .vs-spacer { position: absolute; top: 0; left: 0; width: 100%; z-index: -1; }
-.vs-content { position: absolute; top: 0; left: 0; width: 100%; transition: transform 0.1s linear; }
+.vs-content { position: absolute; top: 0; left: 0; width: 100%; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -2222,7 +2222,7 @@ function toggleTag(t) { S.activeTag = '__all__'; S.showFavOnly = false; if (S.ac
 // ============================================================
 // 虚拟滚动容器挂载 (Virtual Scrolling & Renderer)
 // ============================================================
-let vsState = { list: [], itemW: 140, itemH: 220, cols: 1, scrollTop: 0, bufferRows: 4, lastStartIndex: -1 };
+let vsState = { list: [], itemW: 140, itemH: 220, cols: 1, scrollTop: 0, bufferRows: 10, lastStartIndex: -1 };
 
 function renderGrid() {
   if (S.folderView) { renderFolderView(); return; }
