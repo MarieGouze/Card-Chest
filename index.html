@@ -1071,6 +1071,20 @@ mark{background:rgba(184,150,62,.3);color:var(--gold)}
 .qp-detail-btn { width:calc(100% - 32px); margin:20px 16px 16px; background:var(--ink); color:var(--p); border:none; padding:12px; border-radius:12px; font-size:calc(12px * var(--fs-scale)); font-weight:bold; cursor:pointer; box-shadow:0 8px 20px var(--sh); transition:transform 0.2s; }
 .qp-detail-btn:active { transform:scale(0.98); }
 
+/* ================= 修复手机端滑到底部闪烁抖动的补丁 ================= */
+/* 限制备注文本最多显示两行，超出部分显示省略号，防止卡片高度被无限撑大导致计算崩溃 */
+.grid-layout .cnote, .magazine-layout .cnote, .list-layout .cnote {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+.grid-layout .cname, .magazine-layout .cname, .list-layout .cname {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
 </style>
 
 <!-- ============================================================
@@ -2237,13 +2251,15 @@ function updateGridAfterSearch() {
 
   const container = document.getElementById('mainArea');
   const containerWidth = container.clientWidth - 28;
-  if (S.layout === 'grid') { vsState.itemW = S.gridWidth + 10; vsState.itemH = S.gridWidth * 1.5 + 40; }
-  else if (S.layout === 'magazine') { vsState.itemW = S.gridWidth + 50; vsState.itemH = (S.gridWidth + 40) * 1.33 + 70; }
-  else if (S.layout === 'list') { vsState.itemW = containerWidth; vsState.itemH = 74; }
-  
-  vsState.cols = Math.max(1, Math.floor((containerWidth + 10) / vsState.itemW));
-  const rowCount = Math.ceil(list.length / vsState.cols);
-  document.getElementById('vsSpacer').style.height = (rowCount * vsState.itemH) + 'px';
+        // 【修复闪烁 1/2】增加卡片文本区域的预估高度，防止卡片实际高度超出预估
+      if (S.layout === 'grid') { vsState.itemW = S.gridWidth + 10; vsState.itemH = S.gridWidth * 1.5 + 85; }
+      else if (S.layout === 'magazine') { vsState.itemW = S.gridWidth + 50; vsState.itemH = (S.gridWidth + 40) * 1.33 + 95; }
+      else if (S.layout === 'list') { vsState.itemW = containerWidth; vsState.itemH = 85; }
+      
+      vsState.cols = Math.max(1, Math.floor((containerWidth + 10) / vsState.itemW));
+      const rowCount = Math.ceil(list.length / vsState.cols);
+      // 【修复闪烁 2/2】加上 120px 的底部安全缓冲，抵消底部悬浮按钮占据的空间
+      document.getElementById('vsSpacer').style.height = (rowCount * vsState.itemH + 120) + 'px';
   vsState.lastStartIndex = -1; renderVisibleCards();
 }
 
