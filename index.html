@@ -520,7 +520,15 @@ body.has-mouse .card-item:hover .card-hover-actions { opacity: 1 !important; poi
 .fab:hover{transform:scale(1.08)}
 .btt-btn{bottom:82px;width:40px;height:40px;font-size:18px;background:var(--p2);color:var(--ink);border:1px solid var(--bd);opacity:0;pointer-events:none;transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(10px);}
 .btt-btn.show{opacity:1;pointer-events:auto; transform: translateY(0);}
-.btt-btn.show{opacity:1;pointer-events:auto;}
+/* 新增：悬浮唤出工具栏按钮 */
+.reveal-btn{bottom:132px;width:40px;height:40px;font-size:18px;background:var(--p2);color:var(--ink);border:1px solid var(--bd);opacity:0;pointer-events:none;transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(10px);}
+.reveal-btn.show{opacity:1;pointer-events:auto; transform: translateY(0);}
+/* 独立搜索栏外壳 */
+.search-row-wrap { padding: 10px 14px; background: var(--p2); border-bottom: 1px solid var(--bd); }
+/* 新增：悬浮空降工具栏状态 */
+#toolbarWrap { transition: transform 0.2s ease; }
+#toolbarWrap.floating-toolbar { position: sticky; top: 0; z-index: 150; background: var(--p2); box-shadow: 0 8px 24px var(--sh); animation: slideDown 0.2s ease-out; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
 
 /* =======================================
    弹窗与详情页样式 
@@ -1311,57 +1319,63 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   <div class="left-pane" id="leftPane">
     
     <div class="topbar">
-          <div class="logo" onclick="scrollToTop()" style="cursor:pointer;" title="点击回到顶部"><span class="logo-m">Marie's Chest</span><span class="logo-s">CARD ARCHIVE</span></div>
-      <div class="sbox">
+  <div class="logo" onclick="scrollToTop()" style="cursor:pointer;" title="点击回到顶部"><span class="logo-m">Marie's Chest</span><span class="logo-s">CARD ARCHIVE</span></div>
+  <div style="flex:1"></div> <!-- 占位撑开空间 -->
+  <button class="hbtn" title="搜索帮助" onclick="openModal('searchHelpModal')" style="font-weight: bold; padding: 5px 9px;">?</button>
+  <button class="hbtn" id="selectModeBtn" onclick="toggleSelectMode()">选择</button>
+  <button class="hbtn" id="themeBtn" onclick="toggleTheme()">☽</button>
+  <button class="hbtn" onclick="openSettings()">≡</button>
+</div>
+
+<div class="main-area" id="mainArea" onscroll="handleScroll()">
+  
+  <!-- 工具栏包裹层，用于悬浮空降 -->
+  <div id="toolbarWrap">
+    <div class="search-row-wrap">
+      <div class="sbox" style="max-width: 100%;">
         <input type="text" id="searchInput" placeholder="Search: tag:傲娇 char>5000 ..." autocomplete="off">
         <span class="sico-clear" id="searchClear" onclick="clearSearch()">✕</span>
         <span class="sico" title="聚焦搜索" onclick="document.getElementById('searchInput').focus()">⌕</span>
-        <!-- 新增: 自动补全下拉面板 -->
         <div class="autocomplete-panel" id="acPanel"></div>
       </div>
-      <button class="hbtn" title="搜索帮助" onclick="openModal('searchHelpModal')" style="font-weight: bold; padding: 5px 9px;">?</button>
-      <button class="hbtn" id="selectModeBtn" onclick="toggleSelectMode()">选择</button>
-      <button class="hbtn" id="themeBtn" onclick="toggleTheme()">☽</button>
-      <button class="hbtn" onclick="openSettings()">≡</button>
     </div>
 
     <div class="secbar" id="secbar">
-      <div class="secbar-sp"></div>
-      <div class="lbtns">
-        <button class="lbtn active" data-layout="grid" onclick="setLayout('grid')">▦</button>
-        <button class="lbtn" data-layout="list" onclick="setLayout('list')">☰</button>
-        <button class="lbtn" data-layout="magazine" onclick="setLayout('magazine')">◫</button>
-		<button class="lbtn active" id="noteToggleBtn" title="显示/隐藏卡片备注" onclick="toggleNoteDisplay()">📝</button>
-        <button class="lbtn" id="timelineBtn" title="按导入时间查看" onclick="toggleTimeline()">⏱</button>
-        <button class="lbtn" title="回收站" onclick="openTrashModal()" style="color:var(--red)">🗑️</button>
-        <button class="lbtn" id="folderBtn" title="文件夹（按分组成套查看）" onclick="toggleFolderView()">📁</button>
-      </div>
+    <div class="secbar-sp"></div>
+    <div class="lbtns">
+      <button class="lbtn active" data-layout="grid" onclick="setLayout('grid')">▦</button>
+      <button class="lbtn" data-layout="list" onclick="setLayout('list')">☰</button>
+      <button class="lbtn" data-layout="magazine" onclick="setLayout('magazine')">◫</button>
+      <button class="lbtn active" id="noteToggleBtn" title="显示/隐藏卡片备注" onclick="toggleNoteDisplay()">📝</button>
+      <button class="lbtn" id="timelineBtn" title="按导入时间查看" onclick="toggleTimeline()">⏱</button>
+      <button class="lbtn" title="回收站" onclick="openTrashModal()" style="color:var(--red)">🗑️</button>
+      <button class="lbtn" id="folderBtn" title="文件夹（按分组成套查看）" onclick="toggleFolderView()">📁</button>
     </div>
+  </div>
 
-    <div class="scopebar" id="scopebar">
-      <span class="scopelbl">SEARCH IN</span>
-      <button class="sc-chip active" data-scope="name">卡名</button>
-      <button class="sc-chip active" data-scope="desc">简介</button>
-      <button class="sc-chip active" data-scope="tags">标签</button>
-      <button class="sc-chip" data-scope="world">世界书</button>
-      <button class="sc-chip" data-scope="dialog">对白</button>
-      <button class="sc-chip" data-scope="note">备注</button>
+  <div class="scopebar" id="scopebar">
+    <span class="scopelbl">SEARCH IN</span>
+    <button class="sc-chip active" data-scope="name">卡名</button>
+    <button class="sc-chip active" data-scope="desc">简介</button>
+    <button class="sc-chip active" data-scope="tags">标签</button>
+    <button class="sc-chip" data-scope="world">世界书</button>
+    <button class="sc-chip" data-scope="dialog">对白</button>
+    <button class="sc-chip" data-scope="note">备注</button>
+  </div>
+
+  <div class="filterbar-wrap">
+    <div class="filterbar-outer">
+      <div class="filterbar" id="filterbar"></div>
+      <button class="fb-toggle" id="fbToggle" onclick="toggleFilterBar()" title="展开/收起标签">▾</button>
     </div>
+    <div class="fsort-wrap">
+    <select class="fsort" id="fsortSel"></select>
+    <div class="statsbar" id="statsbar"></div>
+  </div>
+</div>
+</div> <!-- toolbarWrap 结束 -->
 
-    <div class="filterbar-wrap">
-      <div class="filterbar-outer">
-        <div class="filterbar" id="filterbar"></div>
-        <button class="fb-toggle" id="fbToggle" onclick="toggleFilterBar()" title="展开/收起标签">▾</button>
-      </div>
-      <div class="fsort-wrap">
-        <select class="fsort" id="fsortSel"></select>
-        <div class="statsbar" id="statsbar"></div>
-      </div>
-    </div>
-
-    <!-- 补回缺失的滚动容器 mainArea -->
-    <div class="main-area" id="mainArea" onscroll="handleScroll()">
-      <div class="grid-layout" id="cardGrid" style="position:relative;">
+<div class="grid-layout" id="cardGrid" style="position:relative;">
         <div class="vs-spacer" id="vsSpacer"></div>
         <div class="vs-content" id="vsContent"></div>
       </div>
@@ -1376,6 +1390,8 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   </div>
 </div><!-- end appContainer -->
 <button class="fab" onclick="openImport()">＋</button>
+<!-- 新增的悬浮唤出按钮 (放大镜图标) -->
+<button class="fab reveal-btn" id="revealBtn" onclick="popupToolbar()" title="在当前位置唤出工具栏">⌕</button>
 <button class="fab btt-btn" id="bttBtn" onclick="scrollToTop()">↑</button>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -2291,12 +2307,33 @@ function updateGridAfterSearch() {
   vsState.lastStartIndex = -1; renderVisibleCards();
 }
 
+// 新增：在当前位置弹出工具栏的函数
+function popupToolbar() {
+  const wrap = document.getElementById('toolbarWrap');
+  if (!wrap) return;
+  wrap.classList.add('floating-toolbar');
+  // 设一个保护锁，防止点击瞬间触发微小滚动导致立刻消失
+  window._ignoreNextScroll = true;
+  setTimeout(() => { window._ignoreNextScroll = false; }, 200);
+}
+
 function handleScroll() {
   const container = document.getElementById('mainArea');
   vsState.scrollTop = container.scrollTop;
   requestAnimationFrame(renderVisibleCards);
   const bttBtn = document.getElementById('bttBtn');
+  const revealBtn = document.getElementById('revealBtn');
+  
   if (container.scrollTop > 400) bttBtn.classList.add('show'); else bttBtn.classList.remove('show');
+  if (container.scrollTop > 100) revealBtn.classList.add('show'); else revealBtn.classList.remove('show');
+
+  // 新增：只要检测到滑动，就隐藏空降的工具栏
+  if (!window._ignoreNextScroll) {
+    const wrap = document.getElementById('toolbarWrap');
+    if (wrap && wrap.classList.contains('floating-toolbar')) {
+      wrap.classList.remove('floating-toolbar');
+    }
+  }
 }
 function scrollToTop() { document.getElementById('mainArea').scrollTo({ top: 0, behavior: 'smooth' }); }
 
