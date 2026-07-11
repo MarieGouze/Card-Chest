@@ -2275,16 +2275,25 @@ function scrollToTop() { document.getElementById('mainArea').scrollTo({ top: 0, 
 function renderVisibleCards() {
   if (S.folderView) return;
   const container = document.getElementById('mainArea'), viewportHeight = container.clientHeight;
-  const startRow = Math.floor(vsState.scrollTop / vsState.itemH), endRow = Math.ceil((vsState.scrollTop + viewportHeight) / vsState.itemH);
-  let startIndex = Math.max(0, (startRow - vsState.bufferRows) * vsState.cols);
-  let endIndex = Math.min(vsState.list.length, (endRow + vsState.bufferRows) * vsState.cols);
-  
-  if (startIndex === vsState.lastStartIndex && document.getElementById('vsContent').children.length > 0) return;
-  vsState.lastStartIndex = startIndex;
-  
-  const content = document.getElementById('vsContent');
-  const yOffset = Math.max(0, (startRow - vsState.bufferRows)) * vsState.itemH;
-  content.style.transform = `translateY(${yOffset}px)`;
+  const totalRows = Math.ceil(vsState.list.length / vsState.cols);
+let startRow = Math.floor(vsState.scrollTop / vsState.itemH);
+let endRow = Math.ceil((vsState.scrollTop + viewportHeight) / vsState.itemH);
+
+// 【终极防弹跳补丁】强制刹车，防止手机端橡皮筋回弹导致计算超出边界
+startRow = Math.max(0, Math.min(startRow, totalRows - 1));
+
+let startIndex = Math.max(0, (startRow - vsState.bufferRows) * vsState.cols);
+let endIndex = Math.min(vsState.list.length, (endRow + vsState.bufferRows) * vsState.cols);
+
+if (startIndex === vsState.lastStartIndex && document.getElementById('vsContent').children.length > 0) return;
+vsState.lastStartIndex = startIndex;
+
+const content = document.getElementById('vsContent');
+// 严格根据实际渲染的起始行来计算偏移量，拒绝悬空
+const actualRenderStartRow = Math.floor(startIndex / vsState.cols);
+const yOffset = actualRenderStartRow * vsState.itemH;
+content.style.transform = `translateY(${yOffset}px)`;
+
   
   const fragment = document.createDocumentFragment(), q = S.searchQuery.trim(), gm = {}; S.groups.forEach(g => gm[g.id] = g.name);
   const nc = {}; vsState.list.forEach(c => nc[c.name] = (nc[c.name] || 0) + 1);
