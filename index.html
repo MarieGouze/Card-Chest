@@ -1440,7 +1440,6 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 
 
-<div class="modal-mask" id="importModal">
 <!-- 快速预览弹窗 -->
 <div class="modal-mask" id="quickPreviewModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title" style="color:var(--ink4);font-size:10px;letter-spacing:0.2em;">QUICK PREVIEW</span><button class="mclose" onclick="closeModal('quickPreviewModal')">✕</button></div><div class="modal-body" id="qpBody" style="padding:0; overflow-y:auto; max-height:calc(100vh - 120px);"></div></div></div>
 
@@ -1449,6 +1448,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 <!-- 长文本沉浸式编辑弹窗 -->
 <div class="modal-mask" id="fieldEditModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title" id="fieldEditTitle">编辑</span><button class="mclose" onclick="closeModal('fieldEditModal')">✕</button></div><div class="modal-body"><textarea id="fieldEditArea" style="width:100%;height:300px;font-size:calc(13px * var(--fs-scale));line-height:1.8;resize:none;background:var(--p);border:1px solid var(--bd);color:var(--ink);padding:12px;font-family:var(--sf);border-radius:var(--r);outline:none" placeholder="在这里编辑..."></textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="actbtn" style="flex:0 0 auto; color:var(--gold); border-color:var(--gold);" onclick="_fieldEditUndo()" title="撤回到打开时的内容">↩ 撤回修改</button><button class="actbtn pri" style="flex:1" onclick="_fieldEditSave()">💾 保存</button></div></div></div></div>
+<div class="modal-mask" id="importModal">
   <div class="modal-box">
     <div class="modal-hd"><span class="modal-title">IMPORT</span><button class="mclose" onclick="closeModal('importModal')">✕</button></div>
     <div class="modal-body">
