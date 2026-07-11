@@ -1359,11 +1359,14 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
       </div>
     </div>
 
-
+    <!-- 补回缺失的滚动容器 mainArea -->
+    <div class="main-area" id="mainArea" onscroll="handleScroll()">
       <div class="grid-layout" id="cardGrid" style="position:relative;">
         <div class="vs-spacer" id="vsSpacer"></div>
         <div class="vs-content" id="vsContent"></div>
       </div>
+    </div>
+    
   </div><!-- end left-pane -->
 
   <!-- 右栏：大屏双栏时的详情面板替代品 -->
