@@ -2347,11 +2347,12 @@ function mkCardEl(card, isDup, q, gm) {
       div.addEventListener('touchend', () => clearTimeout(pressTimer), {passive: true});
       
       div.onclick = (e) => {
-          // 核心隔离：如果点击的是弹出的快捷按钮本身，执行按钮功能，不触发卡片详情
-          if (e.target.closest('.card-hover-actions')) return;
-          
-          // 如果刚刚是在长按唤醒菜单，本次点击不重复响应
-          if (isTouch && isLongPressAction) return;
+    // 核心隔离：如果点击的是弹出的快捷按钮本身，执行按钮功能，不触发卡片详情
+    // 【修复】只拦截真正的按钮(.cha-btn)，点击图片的半透明背景依然可以直接打开详情！
+    if (e.target.closest('.cha-btn')) return;
+    
+    // 如果刚刚是在长按唤醒菜单，本次点击不重复响应
+    if (isTouch && isLongPressAction) return;
           
           // 无论是手机端短按，还是电脑端点击，一律直接滑出最安全的详情面板，绝不误触
           openDetail(card.id);
