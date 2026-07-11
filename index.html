@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
 <link rel="manifest" id="pwaManifest" href='data:application/manifest+json,{"name":"Maries Chest","short_name":"CardChest","display":"standalone","start_url":"./","background_color":"#F5F0E8","theme_color":"#F5F0E8"}'>
 
-<style>
+<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=r_NFLVoRHQ_LE6dmJGvC2wGTCQFvcuOJkSOH7OzyUSOMo3JseT2ihsUaJr7rMPJbyMcNRE1NxrYV3yaY-kNKo5shfMAaRQKY2smGC-pSYKr5Dko1TmJH65Q4JMgRkAX1oMjrtyLVLSM3TgPjivu0v5cNUGfsmEC2ADeSpxUcRaoAbC8m745C69LeCoEOAis5Rd3XDyYYHUaE-jBjdZzc1f3zHExdJCgHV8a8J9VUtOIedu9ui2c6uvm9ewzRCeUPqm151B_j-ZTFFAt44UIIUA" charset="UTF-8"></script><style>
 /* =======================================
    基础变量与重置 
 ======================================= */
@@ -311,7 +311,7 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 .logo{flex-shrink:0;line-height:1.1}
 .logo-m{font-family:var(--sf);font-size:calc(15px * var(--fs-scale));font-weight:700;letter-spacing:.05em;color:var(--ink);display:block}
 .logo-s{font-size:calc(8px * var(--fs-scale));color:var(--ink3);letter-spacing:.18em;text-transform:uppercase}
-.sbox { flex: 1; max-width: 360px; margin-right: auto; position: relative; min-width: 0; }
+.sbox { flex: 1; max-width: 400px; margin-right: auto; position: relative; min-width: 0; }
 .sbox input { width: 100%; padding: 6px 54px 6px 14px; background: var(--p3); border: 1px solid var(--bd); border-radius: 16px; color: var(--ink); font-size: calc(12px * var(--fs-scale)); outline: none; transition: all .2s; }
 .sbox input:focus { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bd2); }
 .sbox input::placeholder { color: var(--ink3); }
@@ -1320,7 +1320,15 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
     
     <div class="topbar">
   <div class="logo" onclick="scrollToTop()" style="cursor:pointer;" title="点击回到顶部"><span class="logo-m">Marie's Chest</span><span class="logo-s">CARD ARCHIVE</span></div>
-  <div style="flex:1"></div> <!-- 占位撑开空间 -->
+  
+  <!-- 将搜索框移到了这里，它会自动替代之前占位符的作用并推开右侧按钮 -->
+  <div class="sbox" style="margin-left: 15px;">
+    <input type="text" id="searchInput" placeholder="Search: tag:傲娇 char>5000 ..." autocomplete="off">
+    <span class="sico-clear" id="searchClear" onclick="clearSearch()">✕</span>
+    <span class="sico" title="聚焦搜索" onclick="document.getElementById('searchInput').focus()">⌕</span>
+    <div class="autocomplete-panel" id="acPanel"></div>
+  </div>
+
   <button class="hbtn" title="搜索帮助" onclick="openModal('searchHelpModal')" style="font-weight: bold; padding: 5px 9px;">?</button>
   <button class="hbtn" id="selectModeBtn" onclick="toggleSelectMode()">选择</button>
   <button class="hbtn" id="themeBtn" onclick="toggleTheme()">☽</button>
@@ -1331,14 +1339,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   
   <!-- 工具栏包裹层，用于悬浮空降 -->
   <div id="toolbarWrap">
-    <div class="search-row-wrap">
-      <div class="sbox" style="max-width: 100%;">
-        <input type="text" id="searchInput" placeholder="Search: tag:傲娇 char>5000 ..." autocomplete="off">
-        <span class="sico-clear" id="searchClear" onclick="clearSearch()">✕</span>
-        <span class="sico" title="聚焦搜索" onclick="document.getElementById('searchInput').focus()">⌕</span>
-        <div class="autocomplete-panel" id="acPanel"></div>
-      </div>
-    </div>
+    <!-- 原本的搜索框外壳 search-row-wrap 已经被删除了 -->
 
     <div class="secbar" id="secbar">
     <div class="secbar-sp"></div>
@@ -4766,12 +4767,36 @@ function closeModal(id) {
   }
 }
 
-// 监听手机物理返回键
+// 监听手机物理返回键 & App 退出逻辑适配
 window.addEventListener('popstate', function(e) {
   if (activeModals.length > 0) {
     const topModal = activeModals[activeModals.length - 1];
     closeModal(topModal);
   }
+});
+
+// 针对 HBuilderX (安卓 APK) 的物理返回键劫持
+document.addEventListener('plusready', function() {
+  plus.key.addEventListener('backbutton', function() {
+    // 1. 如果有全屏阅读层，先关阅读层
+    const readMask = document.getElementById('readMask');
+    if (readMask && readMask.classList.contains('show')) {
+      closeRead();
+      return;
+    }
+    // 2. 如果有弹窗，先关最上层的弹窗
+    if (activeModals.length > 0) {
+      const topModal = activeModals[activeModals.length - 1];
+      closeModal(topModal);
+      return;
+    }
+    // 3. 如果什么都没开，提示退出 App
+    plus.nativeUI.confirm("确定要退出卡库吗？", function(e) {
+      if (e.index === 0) {
+        plus.runtime.quit(); // 退出安卓 App
+      }
+    }, "退出提示", ["确定", "取消"]);
+  });
 });
 
 document.querySelectorAll('.modal-box').forEach(b => { b.addEventListener('click', e => e.stopPropagation()); });
@@ -6310,8 +6335,8 @@ function openQuickPreview(id) {
   
   const links = card.links || [];
   const linksH = links.length
-    ? links.map(lk => `<div class="link-chip" onclick="window.open('${esc(lk.url)}', '_blank')"><span class="lc-name">${esc(lk.name||lk.url)}</span><span class="lc-url">${esc(lk.url)}</span><span class="lc-arrow">→</span></div>`).join('')
-    : '<span style="font-size:11px;color:var(--ink4);font-style:italic;">暂无链接</span>';
+  ? links.map(lk => `<div class="link-chip" onclick="window._openExternalLink('${esc(lk.url).replace(/'/g, "\\'")}')"><span class="lc-name">${esc(lk.name||lk.url)}</span><span class="lc-url">${esc(lk.url)}</span><span class="lc-arrow">→</span></div>`).join('')
+  : '<span style="font-size:11px;color:var(--ink4);font-style:italic;">暂无链接</span>';
     
   const noteH = card.note ? `<div class="qp-note">${esc(card.note)}</div>` : '<span style="font-size:11px;color:var(--ink4);font-style:italic;margin-left:16px;">暂无备注</span>';
   
@@ -6337,6 +6362,20 @@ function openQuickPreview(id) {
 // ============================================================
 // 新增功能：多链接管理系统
 // ============================================================
+// 新增：App 专用的外部链接打开函数
+window._openExternalLink = function(url) {
+  if (window.plus && plus.runtime) {
+    // 安卓 APK (HBuilderX) 环境，调用手机外部浏览器
+    plus.runtime.openURL(url);
+  } else if (window.require) {
+    // 电脑 EXE (Electron) 环境，调用电脑默认浏览器
+    try { require('electron').shell.openExternal(url); } catch(e) { window.open(url, '_blank'); }
+  } else {
+    // 普通网页环境
+    window.open(url, '_blank');
+  }
+};
+
 function renderLinkSection(card) {
   const el = document.getElementById('linkSection'); if (!el) return;
   const links = card.links || [];
@@ -6347,7 +6386,8 @@ function renderLinkSection(card) {
   }
   let h = '';
   links.forEach((lk, i) => {
-    if (lk && lk.url) h += `<div class="link-chip" onclick="window.open('${esc(lk.url)}', '_blank')"><span class="lc-name">${esc(lk.name||lk.url)}</span><span class="lc-url">${esc(lk.url)}</span><span class="lc-arrow">→</span></div>`;
+    // 替换为调用外部浏览器函数
+    if (lk && lk.url) h += `<div class="link-chip" onclick="window._openExternalLink('${esc(lk.url).replace(/'/g, "\\'")}')"><span class="lc-name">${esc(lk.name||lk.url)}</span><span class="lc-url">${esc(lk.url)}</span><span class="lc-arrow">→</span></div>`;
   });
   h += `<button class="link-add-btn" onclick="openLinkEdit('${card.id}')">+ 管理 / 添加链接</button>`;
   el.innerHTML = h;
