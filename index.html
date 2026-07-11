@@ -40,21 +40,21 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
 /* =======================================
    多主题样式库 (天依蓝 + 卡库风格)
 ======================================= */
-/* 1. 天依蓝 (优化版：低饱和冰蓝 + 极浅通透奶黄) */
+/* 1. 喵喵清透蓝 (柔和奶黄底 + 护眼清透蓝) */
 [data-style="tianyi"] {
-  --p: #fdfaf4;       /* 极浅通透奶黄，降低黄色饱和度 */
-  --p2: #ffffff;      
-  --p3: #f5f1e6;      /* 柔和的次要背景 */
-  --p4: #ebe5d5;      
+  --p: #FFFDF2;       /* 喵喵奶黄背景 */
+  --p2: #FFFFFF;      /* 纯白面板 */
+  --p3: #f5fcff;      /* 柔和的浅蓝次要背景 */
+  --p4: #e5f0f5;      /* 边框或加深背景 */
   
-  --ink: #44505e;     /* 偏蓝调的深灰，更契合主题 */
-  --ink2: #657485;    
-  --ink3: #9fb0c2;    
-  --ink4: #cce3f0;    
-
-  --bd: rgba(143, 204, 235, 0.25); /* 半透明冰蓝边框 */
-  --bd2: rgba(143, 204, 235, 0.15);
-  --sh: rgba(110, 175, 210, 0.08); /* 极柔和的弥散阴影 */
+  --ink: #4a4a4a;     /* 主文本灰 */
+  --ink2: #507b94;    /* 蓝调次文本 */
+  --ink3: #888888;    /* 浅文本 */
+  --ink4: #b0c4de;    
+  
+  --bd: #e5f0f5;      /* 浅蓝边框 */
+  --bd2: rgba(139, 205, 239, 0.25); 
+  --sh: 0 8px 24px rgba(139, 205, 239, 0.15); /* 柔和阴影 */
   --r: 16px;          
 }
 
@@ -74,23 +74,29 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
   --sh: rgba(0, 0, 0, 0.4);
 }
 
-/* 🔘 按钮与高亮元素：优化清晰度与边缘锐度 */
+/* 🔘 按钮与高亮元素：喵喵清透蓝 (无晕边，浅66ccff包边) */
 [data-style="tianyi"] .actbtn.pri, 
 [data-style="tianyi"] .act-row button:first-child,
 [data-style="tianyi"] .ver-chip.active {
-  background-color: #66ccff !important;
-  border-color: #66ccff !important;
+  background-color: #8bcdef !important;
+  border: 1px solid rgba(102, 204, 255, 0.6) !important; /* 浅 #66ccff 包边 */
   color: #fff !important;
-  font-weight: 700 !important; /* 加粗字体 */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important; /* 增加文字微阴影提升辨识度 */
-  box-shadow: 0 2px 6px rgba(102, 204, 255, 0.25) !important; /* 缩小阴影范围，去除发虚感 */
+  font-weight: 700 !important;
+  text-shadow: none !important; 
+  box-shadow: none !important; /* 去掉晕边发光 */
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 [data-style="tianyi"] .actbtn.pri:hover, 
 [data-style="tianyi"] .act-row button:first-child:hover {
-  background-color: #55bbee !important;
-  border-color: #55bbee !important;
+  background-color: #72bae0 !important;
+  border-color: #66ccff !important; /* 鼠标放上去时边框变深一点点 */
   transform: translateY(-1px);
+}
+
+/* 专门去掉天依蓝主题下 SETTINGS 里普通按钮的默认阴影，统一加上浅边框 */
+[data-style="tianyi"] .set-card .actbtn {
+  box-shadow: none !important;
+  border: 1px solid rgba(102, 204, 255, 0.5) !important;
 }
 
 
@@ -548,13 +554,13 @@ body.has-mouse .card-item:hover .card-hover-actions { opacity: 1 !important; poi
 .note-banner.show{display:block}
 .note-banner-lbl{font-size:8px;letter-spacing:.15em;text-transform:uppercase;opacity:.75;margin-bottom:1px}
 .detail-hero{display:flex;gap:13px;margin-bottom:13px}
-.ver-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:11px;padding:7px 9px;background:var(--p3);border:1px solid var(--bd2);border-radius:var(--r); border-left:3px solid #66ccff;}
+.ver-bar{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-bottom:11px;padding:7px 9px;background:var(--p3);border:1px solid var(--bd2);border-radius:var(--r); border-left:3px solid #8bcdef ;}
 .ver-bar-lbl{font-size:calc(9px * var(--fs-scale));letter-spacing:.1em;color:var(--ink3);text-transform:uppercase;margin-right:2px}
 .ver-chip{font-size:calc(10px * var(--fs-scale));font-weight:700;padding:3px 9px;border:1px solid var(--bd);color:var(--ink2);background:var(--p);cursor:pointer;border-radius:var(--r);max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:all .2s}
-.ver-chip:hover{border-color:#66ccff; color:#66ccff;}
-.ver-chip.active{background:#66ccff;color:#fff;border-color:#66ccff;}
+.ver-chip:hover{border-color:#8bcdef ; color:#8bcdef ;}
+.ver-chip.active{background:#8bcdef ;color:#fff;border-color:#8bcdef ;}
 .ver-op-btn{font-size:calc(9px * var(--fs-scale));padding:2px 6px;border:1px solid var(--bd);color:var(--ink3);background:none;cursor:pointer;border-radius:var(--r);flex-shrink:0;transition:all .2s}
-.ver-op-btn:hover{color:#66ccff;border-color:#66ccff;}
+.ver-op-btn:hover{color:#8bcdef ;border-color:#8bcdef ;}
 .dcov{width:94px;min-width:94px;flex-shrink:0;border:1px solid var(--bd);overflow:hidden;cursor:zoom-in;position:relative}
 .dcov img{width:100%;display:block;animation:fadeIn 0.3s ease-out}
 .dcov-ph{width:94px;min-width:94px;aspect-ratio:2/3;background:var(--p3);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--ink4);border:1px solid var(--bd)}
@@ -947,7 +953,7 @@ mark{background:rgba(184,150,62,.3);color:var(--gold)}
 .b-ver{position:absolute;top:4px;left:4px;font-size:9px;font-weight:700;min-width:15px;text-align:center;padding:1px 4px;background:var(--ink);color:var(--p);border-radius:8px;letter-spacing:0}
 .note-ta.collapsed { max-height: 0; min-height: 0; padding-top: 0; padding-bottom: 0; overflow: hidden; border-color: transparent; }
 /* 酒馆已推送标记 */
-.card-item.st-pushed { outline: 2px solid #66ccff !important; outline-offset: -2px; }
+.card-item.st-pushed { outline: 2px solid #8bcdef  !important; outline-offset: -2px; }
 [data-theme="dark"] .card-item.st-pushed { outline: 2px solid #3b82f6 !important; }
 
 /* ================= 全局高级感提升 ================= */
@@ -966,32 +972,13 @@ mark{background:rgba(184,150,62,.3);color:var(--gold)}
   border-color: var(--bd) !important;
 }
 
-/* 给顶栏添加更通透的毛玻璃特效，并增加极细的底部高光线 */
+/* 全局通用的自适应毛玻璃特效 (自动提取当前主题颜色并变为 85% 透明) */
 .topbar, .secbar, .filterbar-wrap {
-  background: rgba(255, 255, 255, 0.65) !important;
+  background: var(--p2) !important; /* 兼容极老旧浏览器的后备方案 */
+  background: color-mix(in srgb, var(--p2) 85%, transparent) !important; /* 核心魔法：自动取主题色+透明 */
   backdrop-filter: blur(16px) saturate(120%);
   -webkit-backdrop-filter: blur(16px) saturate(120%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.4) !important;
-}
-[data-theme="dark"] .topbar, 
-[data-theme="dark"] .secbar, 
-[data-theme="dark"] .filterbar-wrap {
-  background: rgba(26, 26, 30, 0.85) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
-/* 赛博主题专属深黑顶栏，完美融入背景 */
-[data-style="cyber"] .topbar, 
-[data-style="cyber"] .secbar, 
-[data-style="cyber"] .filterbar-wrap {
-  background: rgba(23, 23, 23, 0.85) !important; 
-  border-bottom: 1px solid rgba(230, 255, 0, 0.1) !important;
-}
-/* 深海主题专属藏青顶栏，完美融入背景 */
-[data-style="deepsea"] .topbar, 
-[data-style="deepsea"] .secbar, 
-[data-style="deepsea"] .filterbar-wrap {
-  background: rgba(18, 26, 53, 0.85) !important; 
-  border-bottom: 1px solid rgba(242, 212, 121, 0.1) !important;
+  border-bottom: 1px solid var(--bd) !important; /* 边框线也自动跟随当前主题 */
 }
 
 /* 减弱卡片内部的分割线，让界面更干净 */
@@ -1277,7 +1264,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 <div id="splashScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--p);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease">
   <div style="font-size:48px;font-weight:700;color:var(--ink);margin-bottom:20px;font-family:var(--sf)">Marie's Chest</div>
   <div style="width:200px;height:4px;background:var(--p3);border-radius:2px;overflow:hidden;position:relative">
-    <div id="splashProgress" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--gold),#66ccff);transition:width 0.3s ease"></div>
+    <div id="splashProgress" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--gold),#8bcdef );transition:width 0.3s ease"></div>
   </div>
   <div id="splashText" style="margin-top:12px;font-size:11px;color:var(--ink3)">正在加载...</div>
 </div>
@@ -1440,9 +1427,9 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 <div class="modal-mask" id="pickModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title" id="pickTitle">SELECT</span><button class="mclose" onclick="closeModal('pickModal')">✕</button></div><div class="modal-body" id="pickBody"></div></div></div>
 <div class="modal-mask" id="clviewModal">
-  <div class="modal-box" style="max-height:85vh; border-top: 2px solid #66ccff;">
+  <div class="modal-box" style="max-height:85vh; border-top: 2px solid #8bcdef ;">
     <div class="modal-hd">
-      <span class="modal-title" style="color:#66ccff;">历史对话阅览</span>
+      <span class="modal-title" style="color:#8bcdef ;">历史对话阅览</span>
       <button class="mclose" onclick="closeModal('clviewModal')">✕</button>
     </div>
     <div class="modal-body" style="padding:0">
