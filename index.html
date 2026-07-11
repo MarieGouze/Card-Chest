@@ -1325,6 +1325,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
       <button class="hbtn" onclick="openSettings()">≡</button>
     </div>
 
+<div class="secbar" id="secbar"> 
     <div class="secbar" id="secbar">
       <div class="secbar-sp"></div>
       <div class="lbtns">
@@ -1359,7 +1360,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
       </div>
     </div>
 
-    <div class="main-area" id="mainArea" onscroll="handleScroll()">
+
       <div class="grid-layout" id="cardGrid" style="position:relative;">
         <div class="vs-spacer" id="vsSpacer"></div>
         <div class="vs-content" id="vsContent"></div>
@@ -2302,8 +2303,19 @@ function renderVisibleCards() {
   if (S.folderView) return;
   const container = document.getElementById('mainArea'), viewportHeight = container.clientHeight;
   const totalRows = Math.ceil(vsState.list.length / vsState.cols);
-let startRow = Math.floor(vsState.scrollTop / vsState.itemH);
-let endRow = Math.ceil((vsState.scrollTop + viewportHeight) / vsState.itemH);
+  
+  // 自动计算顶部工具栏占据的高度，防止卡片提前消失
+  let headerH = 0;
+  const secbar = document.getElementById('secbar');
+  const scopebar = document.getElementById('scopebar');
+  const filterbar = document.querySelector('.filterbar-wrap');
+  if (secbar) headerH += secbar.offsetHeight;
+  if (scopebar && scopebar.classList.contains('show')) headerH += scopebar.offsetHeight;
+  if (filterbar) headerH += filterbar.offsetHeight;
+
+  let effectiveScrollTop = Math.max(0, vsState.scrollTop - headerH);
+  let startRow = Math.floor(effectiveScrollTop / vsState.itemH);
+  let endRow = Math.ceil((effectiveScrollTop + viewportHeight) / vsState.itemH);
 
 // 【终极防弹跳补丁】强制刹车，防止手机端橡皮筋回弹导致计算超出边界
 startRow = Math.max(0, Math.min(startRow, totalRows - 1));
