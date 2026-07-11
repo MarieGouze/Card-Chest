@@ -757,6 +757,7 @@ body.has-mouse .card-item:hover .card-hover-actions { opacity: 1 !important; poi
 .busy-track{height:6px;background:var(--p4);border-radius:3px;overflow:hidden}
 .busy-bar{height:100%;width:0;background:var(--ink);transition:width .2s}
 .busy-count{font-size:11px;color:var(--ink2);margin-top:8px;font-variant-numeric:tabular-nums}
+@keyframes busySpin{to{transform:rotate(360deg)}}
 .fav-star{color:var(--gold);font-size:.95em}
 .timeline-date{grid-column:1/-1;width:100%;font-size:11px;font-family:var(--sf);font-weight:700;color:var(--ink2);letter-spacing:.05em;padding:8px 4px 4px;border-bottom:1px solid var(--bd);margin:4px 0 2px}
 .list-layout .timeline-date,.magazine-layout .timeline-date{padding-left:14px}
@@ -1040,6 +1041,32 @@ mark{background:rgba(184,150,62,.3);color:var(--gold)}
   border: 1px solid #e6ff00;
   color: #e6ff00;
 }
+
+/* 编辑悬浮工具球 */
+.edit-fab{position:absolute;right:0;bottom:88px;z-index:60}
+.edit-fab .efab-ball{width:42px;height:42px;border:none;border-radius:50% 0 0 50%;background:var(--ink);color:var(--p);font-size:19px;cursor:pointer;box-shadow:-4px 4px 16px var(--sh);display:flex;align-items:center;justify-content:center;transition:transform .2s}
+.edit-fab .efab-ball:active{transform:scale(.9)}
+.edit-fab .efab-panel{position:absolute;right:0;bottom:0;width:260px;background:rgba(250,247,241,.9);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--bd);border-radius:16px;box-shadow:0 18px 48px var(--sh);padding:12px;transform-origin:bottom right;transition:transform .22s cubic-bezier(.2,1.1,.3,1),opacity .18s}
+.edit-fab.collapsed .efab-panel{transform:scale(.2);opacity:0;pointer-events:none}
+.edit-fab.collapsed .efab-ball{opacity:1}
+.edit-fab:not(.collapsed) .efab-ball{opacity:0;pointer-events:none}
+.efab-hd{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;color:var(--ink);letter-spacing:.08em;margin-bottom:8px;cursor:grab;user-select:none}
+.efab-x{cursor:pointer;font-size:14px;color:var(--ink3);padding:2px 6px}
+.efab-sec{padding:8px 0;border-top:1px solid var(--bd2)}
+.efab-sec:first-of-type{border-top:none}
+.efab-lb{font-size:10.5px;color:var(--ink3);font-weight:700;margin-bottom:6px}
+.efab-row{display:flex;gap:5px;align-items:center}
+.efab-in{flex:1;min-width:0;box-sizing:border-box;padding:7px 9px;font-size:12px;border:1px solid var(--bd);border-radius:8px;background:var(--p2);color:var(--ink);outline:none}
+.efab-in:focus{border-color:var(--gold)}
+.efab-btn{flex-shrink:0;padding:7px 9px;font-size:11px;border:none;border-radius:8px;background:var(--ink);color:var(--p);cursor:pointer;white-space:nowrap}
+.efab-btn:active{opacity:.8}
+.efab-btn.wide{width:100%;padding:9px;font-size:12px;background:var(--p3);color:var(--ink2);font-weight:700;margin-bottom:4px;}
+.efab-quick{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.efab-chip{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;font-size:11px;background:var(--p3);color:var(--ink2);border:1px solid var(--bd);border-radius:20px;cursor:pointer}
+.efab-chip.add{background:none;font-weight:700}
+.efab-chip-x{font-size:11px;color:var(--red);opacity:.6;line-height:1}
+.edit-search-bar{display:flex;align-items:center;gap:6px;margin-bottom:8px;padding:6px;background:var(--p3);border:1px solid var(--gold);border-radius:10px}
+.edit-search-hint{flex-shrink:0;font-size:10.5px;color:var(--ink3);min-width:34px;text-align:center}
 
 /* ================= 新增：多链接、快速预览、长文本编辑 样式 ================= */
 .link-row { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; padding:12px; background:var(--p3); border-radius:14px; border:1px solid var(--bd); position:relative; }
@@ -1366,9 +1393,10 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 
 <div class="busy-mask" id="busyMask">
   <div class="busy-box">
+    <div class="busy-spin" id="busySpin" style="display:none; width:38px; height:38px; margin:4px auto 12px; border:3px solid var(--p4); border-top-color:var(--ink); border-radius:50%; animation:busySpin .8s linear infinite;"></div>
     <div class="busy-title" id="busyTitle">处理中</div>
     <div class="busy-sub" id="busySub">请稍候…</div>
-    <div class="busy-track"><div class="busy-bar" id="busyBar"></div></div>
+    <div class="busy-track" id="busyTrackWrap"><div class="busy-bar" id="busyBar"></div></div>
     <div class="busy-count" id="busyCount"></div>
   </div>
 </div>
@@ -1538,6 +1566,10 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
         
         <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">全局字号缩放：<span id="fontScaleVal" style="font-weight:bold;color:var(--ink);">1.10</span>倍</div>
         <input type="range" id="fontScale" min="0.8" max="1.5" step="0.05" value="1.10" style="width:100%;margin-bottom:10px" oninput="changeFontScale(this.value)">
+        <div style="font-size:11px; margin-top:8px; display:flex; align-items:center; gap:6px;">
+  <input type="checkbox" id="lowMemToggle" onchange="toggleLowMemory(this.checked)"> 
+  <label for="lowMemToggle">开启低内存模式 (防闪退，但快速滑动可能闪烁)</label>
+</div>
       </div>
 
       <div class="set-card">
@@ -1659,7 +1691,7 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 <div class="read-box">
 <div class="read-hd">
   <div style="display:flex; align-items:center; gap:8px;">
-    <button class="expand-btn" id="toggleSidebarBtn" style="display:none; font-size:16px; padding:2px 8px;" onclick="document.getElementById('readSidebar').classList.toggle('collapsed')">☰</button>
+    <button class="expand-btn" id="toggleSidebarBtn" style="display:none; font-size:16px; padding:2px 8px;" onclick="toggleReadSidebar()">☰</button>
     <span class="read-title" id="readTitle">—</span>
   </div>
   <div style="display:flex;gap:5px">
@@ -1671,8 +1703,9 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
   </div>
 </div>
 <div class="read-inner-flex" style="display:flex; flex:1; overflow:hidden; position:relative;">
-  <div id="readSidebar" style="width:240px; border-right:1px solid var(--bd); background:var(--p3); overflow-y:auto; display:none; flex-shrink:0; padding:6px 0;"></div>
-  <div class="read-body" id="readBody" style="flex:1;"></div>
+  <div class="read-sb-backdrop" id="readSbBackdrop" onclick="toggleReadSidebar()" style="position:absolute;inset:0;z-index:15;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .24s;"></div>
+  <div id="readSidebar" style="position:absolute;top:0;left:0;bottom:0;z-index:20;width:240px;max-width:78%;box-shadow:6px 0 24px rgba(0,0,0,.18);transform:translateX(-102%);transition:transform .26s cubic-bezier(.2,.9,.3,1);background:var(--p3);overflow-y:auto;display:none;padding:6px 0;"></div>
+  <div class="read-body" id="readBody" style="flex:1;" ondblclick="_readDblEdit(event)"></div>
   <!-- 悬浮导航按钮 -->
   <div class="read-nav-floating" id="readNavFloating" style="display:none;">
     <button class="read-nav-btn" id="rnFirst" onclick="navWbFullScreen('first')" title="第一条">⇈</button>
@@ -1751,13 +1784,16 @@ const imgObserver = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     const img = entry.target;
     if (entry.isIntersecting) {
-      // 进入视口，加载图片
-      if (!img.src && img.dataset.src) {
-        img.src = img.dataset.src;
-        img.onload = () => img.classList.add('loaded');
-      }
-    } 
-// 移除了手动删除 src 的逻辑，交给浏览器自动管理内存，彻底解决上下滑动时的图片闪烁问题
+  // 进入视口，加载图片
+  if (!img.src && img.dataset.src) {
+    img.src = img.dataset.src;
+    img.onload = () => img.classList.add('loaded');
+  }
+} else if (S.lowMemoryMode) {
+  // 低内存模式开启时，离开视口释放图片内存
+  img.removeAttribute('src');
+  img.classList.remove('loaded');
+}
   });
 }, { 
   rootMargin: '250px 0px' // 提前 250px 预加载，保证滑动平滑
@@ -2021,6 +2057,8 @@ try {
 
   const mFs = await dbG('meta', 'fontScale');
   if (mFs) { S.fontScale = parseFloat(mFs.value); document.documentElement.style.setProperty('--fs-scale', S.fontScale); const fs = document.getElementById('fontScale'); if (fs) fs.value = S.fontScale; const fsv = document.getElementById('fontScaleVal'); if (fsv) fsv.textContent = S.fontScale.toFixed(2); } else { const fs = document.getElementById('fontScale'); if (fs) fs.value = S.fontScale; const fsv = document.getElementById('fontScaleVal'); if (fsv) fsv.textContent = S.fontScale.toFixed(2); }
+  const mLm = await dbG('meta', 'lowMemoryMode');
+if (mLm) { S.lowMemoryMode = mLm.value; } else { S.lowMemoryMode = false; }
   
   // 监测大屏双栏
   checkSplitPaneMode();
@@ -2128,6 +2166,7 @@ function applyStyle(s, save=true) {
 }
 function changeGridZoom(val) { const w = parseInt(val, 10); S.gridWidth = w; document.documentElement.style.setProperty('--gw', w + 'px'); dbP('meta', {key:'gridWidth', value: w}); const el = document.getElementById('gridZoomVal'); if(el) el.textContent = w; renderGrid(); }
 function changeFontScale(val) { const scale = parseFloat(val); S.fontScale = scale; document.documentElement.style.setProperty('--fs-scale', scale); dbP('meta', {key: 'fontScale', value: scale}); const el = document.getElementById('fontScaleVal'); if(el) el.textContent = scale.toFixed(2); }
+function toggleLowMemory(val) { S.lowMemoryMode = val; dbP('meta', {key: 'lowMemoryMode', value: val}); showToast('低内存模式已' + (val ? '开启' : '关闭')); }
 
 function toggleFilterBar() {
   const bar = document.getElementById('filterbar'), btn = document.getElementById('fbToggle');
@@ -2423,15 +2462,23 @@ function renderFolderView() {
   if (!groups.length) { content.innerHTML = '<div class="folder-hint">还没有任何文件夹～<br>在卡片详情点「▣ 分组」<br>把成套的世界书/预设归到一起</div>'; return; }
   
   groups.forEach(g => {
-    const cards = S.cards.filter(c => c.groupId === g.id), cover = cards.find(c => c._thumbBlobUrl);
-    const covSrc = cover ? cover._thumbBlobUrl : null;
-    const cov = covSrc ? `<img class="fc-img cov-img" data-src="${covSrc}" alt="">` : `<div class="fc-ph">📁</div>`;
-    const el = document.createElement('div'); el.className = 'folder-card'; el.onclick = () => openFolder(g.id);
-    el.innerHTML = `<div class="folder-cover"><div class="folder-tab"></div>${cov}<div class="folder-veil"></div><span class="folder-cnt">${cards.length} 项</span><span class="folder-corner">📁</span></div><div class="folder-name">${esc(g.name)}</div>`;
-    content.appendChild(el);
-    const imgEl = el.querySelector('img.cov-img');
-    if (imgEl && imgEl.dataset.src) imgObserver.observe(imgEl);
-  });
+  const cards = S.cards.filter(c => c.groupId === g.id), cover = cards.find(c => c._thumbBlobUrl);
+  const covSrc = cover ? cover._thumbBlobUrl : null;
+  const cov = covSrc ? `<img class="fc-img cov-img" data-src="${covSrc}" alt="">` : `<div class="fc-ph">📁</div>`;
+  const el = document.createElement('div'); el.className = 'folder-card'; el.onclick = () => openFolder(g.id);
+  el.innerHTML = `<div class="folder-cover"><div class="folder-tab"></div>${cov}<div class="folder-veil"></div><span class="folder-cnt">${cards.length} 项</span><span class="folder-corner">📁</span></div><div class="folder-name">${esc(g.name)}</div>`;
+  
+  // 新增：长按(手机)或右键(电脑)直接导出整个文件夹
+  let _lpt;
+  el.addEventListener('touchstart', () => { _lpt = setTimeout(() => exportFolder(g.id), 550) }, {passive: true});
+  el.addEventListener('touchend', () => clearTimeout(_lpt));
+  el.addEventListener('touchmove', () => clearTimeout(_lpt), {passive: true});
+  el.oncontextmenu = ev => { ev.preventDefault(); exportFolder(g.id); };
+
+  content.appendChild(el);
+  const imgEl = el.querySelector('img.cov-img');
+  if (imgEl && imgEl.dataset.src) imgObserver.observe(imgEl);
+});
 }
 // ============================================================
 // 拼音关联搜索与自动补全 (Search Auto-Complete)
@@ -2719,6 +2766,7 @@ async function openDetail(id) {
               <button onclick="exportCardFormat('${id}','orig')" style="padding:6px 12px;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd2);font-size:11px;color:var(--ink2);cursor:pointer;">📄 导出源文件</button>
               <button onclick="exportCardFormat('${id}','png')" style="padding:6px 12px;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd2);font-size:11px;color:var(--ink2);cursor:pointer;">🖼️ 导出 PNG</button>
               <button onclick="exportCardFormat('${id}','json')" style="padding:6px 12px;text-align:left;background:none;border:none;font-size:11px;color:var(--ink2);cursor:pointer;">📋 导出 JSON</button>
+              <button onclick="exportCardWithChatlogs('${id}')" style="padding:6px 12px;text-align:left;background:none;border:none;border-top:1px solid var(--bd2);font-size:11px;color:var(--ink2);cursor:pointer;">📦 导出 卡片+聊天记录</button>
           </div>
       </div>
       <button class="dact" onclick="openGrpModal('${id}')">▣ 分组</button>
@@ -3319,8 +3367,10 @@ async function executeTavernPull() {
              const rx = finalMeta.regex_scripts || finalMeta.scripts;
              if(Array.isArray(rx)) rx.forEach(s => { if(s && (s.scriptName || s.name)) pres.push({name: '⟢ ' + (s.scriptName || s.name), content: s.replaceString || s.replace || s.findRegex || s.content || ''}) });
 
+             // 智能防覆盖：如果本次批量拉取中已经导入过同名卡，强制分配新ID，不覆盖
+             const isDuplicateInBatch = window._batchImportedNames && window._batchImportedNames.has(ci.name);
              const newCard = {
-                id: target.localId || ('c_' + uuid()), hash: await asyncHash(ci.name + finalDesc),
+                id: (target.localId && !isDuplicateInBatch) ? target.localId : ('c_' + uuid()), hash: await asyncHash(ci.name + finalDesc),
                 name: meta.name || ci.name, description: finalDesc,
                 personality: meta.personality || charData.personality || ci.personality || "",
                 first_mes: meta.first_mes || charData.first_mes || ci.first_mes || "",
@@ -3332,7 +3382,7 @@ async function executeTavernPull() {
                 charCount: finalDesc.length, groupId: '', dialogEntries: dlgs, worldBookEntries: wbEntries, presetEntries: pres
              };
              
-             if (target.localId) {
+             if (target.localId && !isDuplicateInBatch) {
                  let isOverwrite = confirm(`本地卡库中已存在同名卡片 [${newCard.name}]。\n\n▶ 点击【确定】覆盖本地旧版。\n▶ 点击【取消】保留两者（将作为独立的新版本/IF线存入卡库）。`);
                  if (isOverwrite) {
                      await dbD('cards', target.localId);
@@ -3342,6 +3392,8 @@ async function executeTavernPull() {
                  }
              }
              await dbP('cards', newCard); pullOk++;
+                          if (!window._batchImportedNames) window._batchImportedNames = new Set();
+             window._batchImportedNames.add(ci.name);
         } catch(ex) {}
     }
     
@@ -4081,6 +4133,8 @@ function openSettings() {
   document.getElementById('newSectionInput').value = '';
   document.getElementById('newSubTagInput').value = '';
   renderSetLists();
+  const lmToggle = document.getElementById('lowMemToggle');
+if(lmToggle) lmToggle.checked = !!S.lowMemoryMode;
   openModal('settingsModal');
 }
 function renderSetLists() {
@@ -4304,11 +4358,10 @@ async function wdFetch(path, opts={}) {
 }
 async function syncPush() {
   if(!webdavConfig.url) return alert('未配置WebDAV');
-  showBusy('推送到云端', '正在整理元数据...', 0.1);
+  showBusy('推送到云端', '正在读取云端索引...', -1); // 使用转圈动画
+  const base = 'KakuSync/';
   try {
-    const base = 'KakuSync/';
     await wdFetch(base, {method:'MKCOL'}).catch(() => {});
-
     let cloudHashes = {};
     try {
       const idxRes = await wdFetch(base + 'Index.json');
@@ -4323,77 +4376,76 @@ async function syncPush() {
       }
     } catch(e) {}
 
-    const keys = await dbKeys('cards');
-    let indexEntries = [];
-    let cardsToUpload = [];
-    let fileMap = {};
+    let confirmedMap = {};
+    const localInfo = {};
+    const toUpload = [];
 
     document.getElementById('busySub').textContent = '比对本地数据...';
     for (let c of S.cards) {
-        indexEntries.push(c.id + ':' + c.hash);
-        // 生成纯净的文件名，去除非法字符
         const safeName = (c.name || 'card').replace(/[\\/:*?"<>|]/g, '');
-        // 直接通过内存轻量字段判断，避免查询重型数据库
         const isImg = c.fileType && (c.fileType.includes('png') || c.fileType.includes('webp'));
         const ext = isImg ? (c.fileType.includes('webp') ? '.webp' : '.png') : '.json';
         const fileName = `${safeName}_${c.id}${ext}`;
         
-        // 将分组、收藏等纯卡库私有数据保存在索引里
-        fileMap[c.id] = { name: c.name, file: fileName, kakuMeta: { section: c.section, groupId: c.groupId, favorite: c.favorite, importedAt: c.importedAt } };
-        // 如果云端没有这个文件的记录，或者哈希不一致，就判定为需要上传
-        if(!cloudHashes[c.id] || cloudHashes[c.id] !== c.hash) cardsToUpload.push(c.id);
-    }
-
-    // 保存非角色卡的系统配置数据，包含 Worker 地址
-    const metaDump = { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib, tavernProxyUrl: tavernProxy };
-    const dumpStr = JSON.stringify({ meta: metaDump, fileMap: fileMap, inventory_hash: indexEntries.join('|') });
-    await wdFetch(base+'Index.json', { method:'PUT', body: dumpStr });
-
-    for(let i=0; i<cardsToUpload.length; i++) {
-        document.getElementById('busySub').textContent = `正在上传单体卡片 (${i+1}/${cardsToUpload.length})...`;
-        document.getElementById('busyBar').style.width = ((i/cardsToUpload.length)*100)+'%';
-        const fullCard = await dbG('cards', cardsToUpload[i]);
-        const fInfo = fileMap[fullCard.id];
-
-        if(fullCard.originalDataUrl && fInfo.file.endsWith('.png')) {
-            // 实时将卡片打包成内置好最新设定的 PNG 图片供用户直连下载
-            let meta = {
-               name: fullCard.name || "", description: fullCard.description || "",
-               personality: fullCard.personality || "", scenario: fullCard.scenario || "",
-               creator_notes: fullCard.note || "", tags: fullCard.tags || [],
-               mes_example: fullCard.mesExample || ""
-            };
-            if (fullCard.dialogEntries && fullCard.dialogEntries.length > 0) {
-               meta.first_mes = fullCard.dialogEntries[0] || "";
-               meta.alternate_greetings = fullCard.dialogEntries.slice(1);
-            } else { meta.first_mes = fullCard.first_mes || ""; }
-            if (fullCard.worldBookEntries && fullCard.worldBookEntries.length > 0) {
-               meta.character_book = { name: meta.name, entries: fullCard.worldBookEntries.map((e, idx) => ({
-                   id: idx, keys: (e.actual_keywords !== undefined ? e.actual_keywords : (e.keys||'')).split(/[,，、]+/).map(k=>k.trim()).filter(Boolean),
-                   comment: e.name || "未命名", content: e.content || "", constant: !!e.constant,
-                   insertion_order: e.order !== undefined ? Number(e.order) : 100, enabled: e.enabled !== false, position: e.position === 1 ? "after_char" : "before_char",
-                   extensions: { position: e.position||0, role: e.role||0, depth: e.depth||4, probability: e.probability||100 }
-               }))};
-            }
-            const finalBlob = buildUpdatedPngBlob(fullCard.originalDataUrl, meta);
-            await wdFetch(base + fInfo.file, { method:'PUT', body: finalBlob });
-        } else if (fullCard.originalDataUrl && fInfo.file.endsWith('.webp')) {
-            // WEBP 无损直传
-            const binary = atob(fullCard.originalDataUrl.split(',')[1]);
-            const bytes = new Uint8Array(binary.length);
-            for (let j=0; j<binary.length; j++) bytes[j] = binary.charCodeAt(j);
-            await wdFetch(base + fInfo.file, { method:'PUT', body: new Blob([bytes], {type: 'image/webp'}) });
+        localInfo[c.id] = { name: c.name, file: fileName, hash: c.hash, kakuMeta: { section: c.section, groupId: c.groupId, favorite: c.favorite, importedAt: c.importedAt } };
+        
+        if(cloudHashes[c.id] && cloudHashes[c.id] === c.hash) {
+            confirmedMap[c.id] = localInfo[c.id]; // 云端已是最新
         } else {
-            // 纯文本卡片传 JSON
-            await wdFetch(base + fInfo.file, { method:'PUT', body: JSON.stringify(fullCard) });
+            toUpload.push(c.id); // 需要上传
         }
-        await new Promise(r => setTimeout(r, 10)); // 防止卡死 UI
     }
 
+    const writeIndex = async () => {
+        const inv = Object.keys(confirmedMap).map(id => id + ':' + confirmedMap[id].hash).join('|');
+        const metaDump = { sections: S.sections, groups: S.groups, subTagLib: S.subTagLib, tavernProxyUrl: tavernProxy };
+        const dumpStr = JSON.stringify({ meta: metaDump, fileMap: confirmedMap, inventory_hash: inv });
+        await wdFetch(base+'Index.json', { method:'PUT', body: dumpStr });
+    };
+
+    if(!toUpload.length) {
+        await writeIndex();
+        dbP('meta', {key: 'webdavSyncTime', value: Date.now()});
+        hideBusy(); loadWebdavConfig();
+        return showToast('云端已是最新，无需同步');
+    }
+
+    showBusy('推送到云端', '开始上传...', 0); // 恢复进度条
+    let ok = 0;
+    for(let i=0; i<toUpload.length; i++) {
+        const id = toUpload[i];
+        const fInfo = localInfo[id];
+        document.getElementById('busySub').textContent = `正在上传 (${i+1}/${toUpload.length}): ${fInfo.name}`;
+        document.getElementById('busyBar').style.width = ((i/toUpload.length)*100)+'%';
+        
+        try {
+            const fullCard = await dbG('cards', id);
+            if(fullCard.originalDataUrl && fInfo.file.endsWith('.png')) {
+                let meta = buildTavernMeta(fullCard);
+                const finalBlob = buildUpdatedPngBlob(fullCard.originalDataUrl, meta);
+                await wdFetch(base + fInfo.file, { method:'PUT', body: finalBlob });
+            } else if (fullCard.originalDataUrl && fInfo.file.endsWith('.webp')) {
+                const binary = atob(fullCard.originalDataUrl.split(',')[1]);
+                const bytes = new Uint8Array(binary.length);
+                for (let j=0; j<binary.length; j++) bytes[j] = binary.charCodeAt(j);
+                await wdFetch(base + fInfo.file, { method:'PUT', body: new Blob([bytes], {type: 'image/webp'}) });
+            } else {
+                await wdFetch(base + fInfo.file, { method:'PUT', body: JSON.stringify(fullCard) });
+            }
+            
+            confirmedMap[id] = fInfo; // 只有成功才记录
+            ok++;
+            if (ok % 5 === 0) await writeIndex(); // 每5张保存一次断点
+        } catch(e) { console.warn('上传失败跳过', id); }
+        await new Promise(r => setTimeout(r, 10));
+    }
+
+    await writeIndex();
     dbP('meta', {key: 'webdavSyncTime', value: Date.now()});
     loadWebdavConfig();
-    showToast(cardsToUpload.length > 0 ? `同步完成！上传了 ${cardsToUpload.length} 张单体角色卡` : '云端已是最新，无需同步');
-  } catch(e) { alert("同步失败(跨域CORS?): "+e.message); } finally { hideBusy(); }
+    hideBusy();
+    showToast(`同步完成！成功上传 ${ok} 张` + (ok < toUpload.length ? ' (部分失败，可再次点击续传)' : ''));
+  } catch(e) { hideBusy(); alert("同步失败: "+e.message); }
 }
 
 // ============================================================
@@ -4585,7 +4637,20 @@ function showToast(msg, type = 'success') {
     setTimeout(() => item.remove(), 200);
   }, 2600);
 }
-function showBusy(tit, sub, prg) { document.getElementById('busyMask').classList.add('show'); document.getElementById('busyTitle').textContent=tit; document.getElementById('busySub').textContent=sub; document.getElementById('busyBar').style.width=(prg*100)+'%'; }
+function showBusy(tit, sub, prg) { 
+  document.getElementById('busyMask').classList.add('show'); 
+  document.getElementById('busyTitle').textContent=tit; 
+  document.getElementById('busySub').textContent=sub; 
+  const spin = document.getElementById('busySpin');
+  const track = document.getElementById('busyTrackWrap');
+  const cnt = document.getElementById('busyCount');
+  if (prg === null || prg < 0) {
+    spin.style.display = 'block'; track.style.display = 'none'; cnt.style.display = 'none';
+  } else {
+    spin.style.display = 'none'; track.style.display = 'block'; cnt.style.display = 'block';
+    document.getElementById('busyBar').style.width=(prg*100)+'%'; 
+  }
+}
 function hideBusy() { document.getElementById('busyMask').classList.remove('show'); }
 function esc(str) { return String(str).replace(/[&<>'"]/g, t=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t])); }
 function hl(txt, q) { if(!q) return esc(txt); const ms = q.trim().split(/\s+/).filter(x=>!x.includes(':')&&!x.includes('>')); if(!ms.length) return esc(txt); let r=esc(txt); ms.forEach(m=>{ r = r.replace(new RegExp(esc(m),'gi'), x=>`<mark>${x}</mark>`); }); return r; }
@@ -5344,6 +5409,11 @@ window.openRead = async function(key) {
       const card = await dbG('cards', id);
       title = '简介 · ' + (card ? card.name : '');
       text = card ? (card.description || '') : '';
+      } else if (key.startsWith('clog_')) {
+    const logData = window._readCache[key];
+    title = logData ? logData.title : '聊天记录';
+    text = ''; // 走 HTML 注入
+    document.getElementById('readBody').innerHTML = logData ? logData.html : '';
   } else if (key.startsWith('wb_')) {
       const parts = key.split('_'); 
       const currentWbIdx = parseInt(parts[1]);
@@ -5384,8 +5454,35 @@ window.openRead = async function(key) {
   }
   
   document.getElementById('readTitle').innerHTML = title + navHtml;
-  document.getElementById('readBody').textContent = text;
+  if (!key.startsWith('clog_')) {
+      document.getElementById('readBody').textContent = text;
+  }
   document.getElementById('readMask').classList.add('show');
+};
+
+window.expandChatlogRead = async function(logId, cardId) {
+  const log = await dbG('chatlogs', logId); if(!log || !log.raw) return;
+  const card = S.cards.find(c => c.id === cardId);
+  const charName = card ? card.name : '角色';
+  let msgs = [];
+  if(log.type === 'jsonl' || log.raw.includes('{"mes":')) {
+      log.raw.split('\n').forEach(line => {
+          const s = line.trim(); if(!s) return;
+          try { const obj = JSON.parse(s); if(obj && typeof obj.mes === 'string') msgs.push({isUser: !!obj.is_user, name: obj.name || '', text: obj.mes}); } catch(e){}
+      });
+  }
+  const key = 'clog_' + log.id;
+  if(msgs.length) {
+      const html = `<div class="chat-wrap" style="background:transparent; max-height:none; padding:0;">` + msgs.map(m => {
+          if(!m.text.trim()) return '';
+          const isU = m.isUser;
+          return `<div class="chat-msg ${isU ? 'chat-user' : 'chat-char'}"><div class="chat-name">${esc(isU ? 'User' : (m.name || charName))}</div>${esc(m.text)}</div>`;
+      }).join('') + `</div>`;
+      window._readCache[key] = {title: '📖 ' + log.name, html: html};
+  } else {
+      window._readCache[key] = {title: '📖 ' + log.name, html: '<div style="white-space:pre-wrap; line-height:1.8;">' + esc((log.raw||'').trim()) + '</div>'};
+  }
+  openRead(key);
 };
 
 window.updateWbNavButtons = function() {
@@ -5416,6 +5513,16 @@ window.navWbFullScreen = function(action) {
         const el = document.getElementById(`wb_nav_item_${nextIdx}`);
         if (el) switchWbFullScreenContent(window._currentWbCardId, nextIdx, el);
     }
+};
+
+window.toggleReadSidebar = function() {
+  const sb = document.getElementById('readSidebar');
+  const bd = document.getElementById('readSbBackdrop');
+  if(sb) {
+      const isOpen = sb.style.transform === 'translateX(0px)';
+      sb.style.transform = isOpen ? 'translateX(-102%)' : 'translateX(0px)';
+      if(bd) { bd.style.opacity = isOpen ? '0' : '1'; bd.style.pointerEvents = isOpen ? 'none' : 'auto'; }
+  }
 };
 
 window.switchWbFullScreenContent = async function(cid, idx, clickedElement) {
@@ -5500,11 +5607,178 @@ window.updateWbSetting = async function(id, idx, key, val) {
 };
 
 window.closeRead = function() {
+  const e = document.getElementById('editFab'); if (e) e.remove();
   document.getElementById('readMask').classList.remove('show');
   window._readCurrentKey = null;
   const eb = document.getElementById('readEditBtn'); if(eb) eb.style.display = 'none';
   // 兼容手机返回键
   activeModals = activeModals.filter(m => m !== 'readMask');
+};
+
+window._readDblEdit = function(e) {
+  if (document.getElementById('readEditTa')) return;
+  let offset = 0;
+  try {
+    if (document.caretRangeFromPoint) {
+      const rng = document.caretRangeFromPoint(e.clientX, e.clientY);
+      if (rng) {
+        const body = document.getElementById('readBody');
+        const iter = document.createNodeIterator(body, NodeFilter.SHOW_TEXT);
+        let node, total = 0;
+        while ((node = iter.nextNode())) {
+          if (node === rng.startContainer) { total += rng.startOffset; break; }
+          total += node.textContent.length;
+        }
+        offset = total;
+      }
+    }
+  } catch(err) {}
+  window._readDblOffset = offset;
+  _readEditCurrent();
+};
+
+window._restoreEditScroll = function(ta) {
+  let ratio = (typeof window._readScrollRatio === 'number') ? window._readScrollRatio : 0;
+  ta.focus();
+  let pos;
+  if (typeof window._readDblOffset === 'number') {
+    pos = Math.min(window._readDblOffset, ta.value.length);
+    ratio = ta.value.length > 0 ? pos / ta.value.length : 0;
+    window._readDblOffset = null;
+  } else {
+    pos = Math.round((ta.value.length) * ratio);
+  }
+  try { ta.setSelectionRange(pos, pos); } catch(e) {}
+  requestAnimationFrame(() => {
+    const sh = ta.scrollHeight - ta.clientHeight;
+    ta.scrollTop = sh > 0 ? sh * ratio : 0;
+  });
+};
+
+window._mountEditFab = function() {
+  const e = document.getElementById('editFab'); if (e) e.remove();
+  const host = document.getElementById('readMask'); if (!host) return;
+  const fab = document.createElement('div');
+  fab.id = 'editFab'; fab.className = 'edit-fab collapsed';
+  // 注入磨砂玻璃和拖拽样式
+  fab.style.cssText = 'position:absolute; right:0; bottom:88px; z-index:60;';
+  fab.innerHTML = `
+    <button class="efab-ball" title="编辑工具" style="width:42px;height:42px;border:none;border-radius:50% 0 0 50%;background:rgba(74,55,40,.9);color:#F5EFE4;font-size:19px;cursor:grab;box-shadow:-4px 4px 16px rgba(44,36,22,.3);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);">⚙️</button>
+    <div class="efab-panel" style="position:absolute;right:0;bottom:0;width:260px;background:rgba(250,247,241,.9);backdrop-filter:blur(18px);border:1px solid var(--bd);border-radius:16px;box-shadow:0 18px 48px var(--sh);padding:12px;transform-origin:bottom right;transition:transform .22s,opacity .18s;">
+      <div class="efab-hd" style="cursor:grab;user-select:none;">编辑工具 <span class="efab-x" onclick="document.getElementById('editFab').classList.add('collapsed')">✕</span></div>
+      <div class="efab-sec">
+        <div class="efab-lb">🧹 删除符号</div>
+        <div class="efab-row"><input id="efabDel" class="efab-in" placeholder="要删的符号"><button class="efab-btn" onclick="_fabDelSymbol()">删除全部</button></div>
+        <div class="efab-quick" id="efabDelQuick"></div>
+      </div>
+       <div class="efab-sec">
+    <div class="efab-lb">✏️ 快捷插入</div>
+    <div class="efab-row"><input id="efabIns" class="efab-in" placeholder="如 {{char}}"><button class="efab-btn" onclick="_fabInsertText()">插入光标处</button></div>
+    <div class="efab-quick" id="efabInsQuick"></div>
+  </div>
+  <!-- 新增：全选与撤回按钮组 -->
+  <div class="efab-sec" style="display:flex; gap:6px; padding-top:8px;">
+    <button class="efab-btn wide" style="margin-bottom:0;" onclick="document.getElementById('readEditTa').value=window._readEditOrigVal">↩ 撤回</button>
+    <button class="efab-btn wide" style="margin-bottom:0;" onclick="const ta=document.getElementById('readEditTa'); if(ta){ta.focus();ta.select();}">全选内容</button>
+  </div>
+</div>`;
+  host.appendChild(fab);
+  _renderFabQuick();
+  _initFabDrag(fab);
+};
+
+function _initFabDrag(fab) {
+  const host = document.getElementById('readMask'); if(!host) return;
+  try {
+    const pos = JSON.parse(localStorage.getItem('efab_pos')||'null');
+    if(pos && typeof pos.top==='number') {
+      fab.style.top = pos.top+'px'; fab.style.bottom = 'auto';
+      if(pos.side==='left') { fab.style.left='0px'; fab.style.right='auto'; fab.querySelector('.efab-ball').style.borderRadius='0 50% 50% 0'; }
+      else { fab.style.left='auto'; fab.style.right='0px'; fab.querySelector('.efab-ball').style.borderRadius='50% 0 0 50%'; }
+      fab.dataset.side = pos.side||'right';
+    }
+  } catch(e){}
+  let dragging=false, moved=false, sy=0, sx=0, startTop=0, startLeft=0;
+  const onDown = (e) => {
+    const t = e.target; if(!t.classList.contains('efab-ball') && !t.classList.contains('efab-hd')) return;
+    dragging=true; moved=false;
+    const p = e.touches ? e.touches[0] : e;
+    sy=p.clientY; sx=p.clientX;
+    const r = fab.getBoundingClientRect(), hr = host.getBoundingClientRect();
+    startTop = r.top-hr.top; startLeft = r.left-hr.left;
+    fab.style.transition='none'; e.preventDefault();
+  };
+  const onMove = (e) => {
+    if(!dragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    const dy = p.clientY-sy, dx = p.clientX-sx;
+    if(Math.abs(dy)>4 || Math.abs(dx)>4) moved=true;
+    const hr = host.getBoundingClientRect();
+    let nt = Math.max(4, Math.min(hr.height-52, startTop+dy));
+    let nl = Math.max(0, Math.min(hr.width-48, startLeft+dx));
+    fab.style.top = nt+'px'; fab.style.bottom = 'auto';
+    fab.style.left = nl+'px'; fab.style.right = 'auto';
+    e.preventDefault();
+  };
+  const onUp = (e) => {
+    if(!dragging) return;
+    dragging=false;
+    const hr = host.getBoundingClientRect(), r = fab.getBoundingClientRect();
+    const distL = r.left-hr.left, distR = hr.right-r.right;
+    fab.style.transition = 'top .2s ease, left .22s cubic-bezier(.2,1,.3,1)';
+    if(distL < 80) { fab.style.left='0px'; fab.style.right='auto'; fab.dataset.side='left'; fab.querySelector('.efab-ball').style.borderRadius='0 50% 50% 0'; }
+    else { fab.style.left='auto'; fab.style.right='0px'; fab.dataset.side='right'; fab.querySelector('.efab-ball').style.borderRadius='50% 0 0 50%'; }
+    try{ localStorage.setItem('efab_pos', JSON.stringify({top: r.top-hr.top, side: fab.dataset.side})); }catch(e){}
+    if(!moved && e.target.classList.contains('efab-ball')) {
+        const panel = fab.querySelector('.efab-panel');
+        if(fab.dataset.side === 'left') { panel.style.left='0'; panel.style.right='auto'; panel.style.transformOrigin='bottom left'; }
+        else { panel.style.right='0'; panel.style.left='auto'; panel.style.transformOrigin='bottom right'; }
+        fab.classList.toggle('collapsed');
+    }
+  };
+  fab.addEventListener('touchstart',onDown,{passive:false}); fab.addEventListener('touchmove',onMove,{passive:false}); fab.addEventListener('touchend',onUp);
+  fab.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+}
+
+function _fabGetQuick(kind){ try{const v=JSON.parse(localStorage.getItem('efab_'+kind)||'null');if(Array.isArray(v))return v;}catch(e){} return kind==='ins'?['{{char}}','{{user}}']:['*','\\n\\n']; }
+function _fabSetQuick(kind,arr){try{localStorage.setItem('efab_'+kind,JSON.stringify(arr));}catch(e){}}
+function _renderFabQuick(){
+  const mk=(kind,cb)=>_fabGetQuick(kind).map((t,i)=>`<span class="efab-chip" onclick="${cb}('${String(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${esc(t)}<span class="efab-chip-x" onclick="event.stopPropagation();_fabDelQuick('${kind}',${i})">×</span></span>`).join('')+`<span class="efab-chip add" onclick="_fabAddQuick('${kind}')">+</span>`;
+  const dq=document.getElementById('efabDelQuick'); if(dq) dq.innerHTML=mk('del','_fabQuickDel');
+  const iq=document.getElementById('efabInsQuick'); if(iq) iq.innerHTML=mk('ins','_fabQuickIns');
+}
+function _fabAddQuick(kind){ const v=prompt('新增快捷符号'); if(v) { const arr=_fabGetQuick(kind); arr.push(v); _fabSetQuick(kind,arr); _renderFabQuick(); } }
+function _fabDelQuick(kind,i){ const arr=_fabGetQuick(kind); arr.splice(i,1); _fabSetQuick(kind,arr); _renderFabQuick(); }
+function _fabQuickDel(sym){ const el=document.getElementById('efabDel'); if(el) el.value=sym; _fabDelSymbol(); }
+function _fabQuickIns(txt){ _fabInsertRaw(txt); }
+
+window._fabDelSymbol = function() {
+  const ta = document.getElementById('readEditTa'); const sym = document.getElementById('efabDel').value || '';
+  if (!ta || !sym) return;
+  const before = ta.value; const after = before.split(sym).join('');
+  const n = (before.length - after.length) / sym.length;
+  ta.value = after; showToast('已删除 ' + (n > 0 ? Math.round(n) : 0) + ' 处');
+};
+window._fabInsertText = function(){ const v=(document.getElementById('efabIns')||{}).value||''; if(v) _fabInsertRaw(v); };
+window._fabInsertRaw = function(txt) {
+  const ta = document.getElementById('readEditTa'); if (!ta) return;
+  const st = ta.selectionStart || 0, en = ta.selectionEnd || 0;
+  ta.value = ta.value.slice(0, st) + txt + ta.value.slice(en);
+  const pos = st + txt.length; ta.focus(); ta.setSelectionRange(pos, pos);
+};
+window._fabFind = function(dir) {
+  const ta = document.getElementById('readEditTa'); const kw = document.getElementById('efabFind').value || '';
+  const hint = document.getElementById('efabFindHint');
+  if (!ta || !kw) { if (hint) hint.textContent = ''; return; }
+  const val = ta.value; const idxs = []; let p = val.indexOf(kw);
+  while (p !== -1) { idxs.push(p); p = val.indexOf(kw, p + 1); }
+  if (!idxs.length) { if (hint) hint.textContent = '无匹配'; return; }
+  const cur = ta.selectionStart || 0; let target;
+  if (dir > 0) { target = idxs.find(x => x > cur); if (target === undefined) target = idxs[0]; }
+  else { const prev = idxs.filter(x => x < cur); target = prev.length ? prev[prev.length - 1] : idxs[idxs.length - 1]; }
+  ta.focus(); ta.setSelectionRange(target, target + kw.length);
+  const ratio = target / val.length; ta.scrollTop = Math.max(0, ta.scrollHeight * ratio - ta.clientHeight / 2);
+  if (hint) hint.textContent = (idxs.indexOf(target) + 1) + '/' + idxs.length;
 };
 
 window._saveReadEdit = async function(type, id, idx) {
@@ -5530,19 +5804,26 @@ window._readEditCurrent = function() {
   if(!window._readCurrentKey) return;
   const k = window._readCurrentKey; const body = document.getElementById('readBody'); if(!body) return;
   const cur = body.textContent || '';
-  const taStyle = 'width:100%;height:calc(100% - 40px);font-size:calc(13px * var(--fs-scale));line-height:1.9;background:var(--p3);border:1px solid #66ccff;color:var(--ink2);padding:12px;resize:none;font-family:var(--sf);border-radius:4px;outline:none';
+  window._readEditOrigVal = cur;
+  const _scrH = body.scrollHeight - body.clientHeight;
+  window._readScrollRatio = _scrH > 0 ? (body.scrollTop / _scrH) : 0;
   
+  const taStyle = 'width:100%;height:calc(100% - 90px);font-size:calc(13px * var(--fs-scale));line-height:1.9;background:var(--p3);border:1px solid var(--gold);color:var(--ink2);padding:12px;resize:none;font-family:var(--sf);border-radius:4px;outline:none';
+  const searchBar = `<div class="edit-search-bar"><input id="efabFind" class="edit-search-in" placeholder="🔍 在此处搜索关键词" onkeydown="if(event.key==='Enter')_fabFind(1)"><button class="edit-search-btn" onclick="_fabFind(-1)">↑</button><button class="edit-search-btn" onclick="_fabFind(1)">↓</button><span class="edit-search-hint" id="efabFindHint"></span></div>`;
+  const undoBtn = `<button class="actbtn" style="color:var(--gold); border-color:var(--gold);" onclick="document.getElementById('readEditTa').value=window._readEditOrigVal" title="撤回到打开时的内容">↩ 撤回</button>`;
+
   if(k.startsWith('desc_')) {
     const id = k.slice(5);
-    body.innerHTML = `<textarea id="readEditTa" style="${taStyle}"></textarea><div style="margin-top:8px;display:flex;gap:8px"><button class="actbtn pri" onclick="_saveReadEdit('desc','${id}')">💾 保存修改</button><button class="actbtn" onclick="closeRead()">✕ 取消</button></div>`;
+    body.innerHTML = `${searchBar}<textarea id="readEditTa" style="${taStyle}"></textarea><div style="margin-top:8px;display:flex;gap:8px">${undoBtn}<button class="actbtn pri" onclick="_saveReadEdit('desc','${id}')">💾 保存修改</button><button class="actbtn" onclick="closeRead()">✕ 取消</button></div>`;
   } else if(k.startsWith('dlg_')) {
     const id = k.slice(4); const didx = window.dlgIdx || 0;
-    body.innerHTML = `<textarea id="readEditTa" style="${taStyle}"></textarea><div style="margin-top:8px;display:flex;gap:8px"><button class="actbtn pri" onclick="_saveReadEdit('dlg','${id}',${didx})">💾 保存修改</button><button class="actbtn" onclick="closeRead()">✕ 取消</button></div>`;
+    body.innerHTML = `${searchBar}<textarea id="readEditTa" style="${taStyle}"></textarea><div style="margin-top:8px;display:flex;gap:8px">${undoBtn}<button class="actbtn pri" onclick="_saveReadEdit('dlg','${id}',${didx})">💾 保存修改</button><button class="actbtn" onclick="closeRead()">✕ 取消</button></div>`;
   } else if(k.startsWith('wb_')) {
     const parts = k.split('_'); const cid = parts.slice(2).join('_'); const wbIdx = parseInt(parts[1], 10);
-    body.innerHTML = `<textarea id="readEditTa" style="${taStyle}"></textarea><div style="margin-top:8px;display:flex;gap:8px"><button class="actbtn pri" onclick="_saveReadEdit('wb','${cid}',${wbIdx})">💾 保存修改</button><button class="actbtn" onclick="closeRead()">✕ 取消</button></div>`;
+    body.innerHTML = `${searchBar}<textarea id="readEditTa" style="${taStyle}"></textarea><div style="margin-top:8px;display:flex;gap:8px">${undoBtn}<button class="actbtn pri" onclick="_saveReadEdit('wb','${cid}',${wbIdx})">💾 保存修改</button><button class="actbtn" onclick="closeRead()">✕ 取消</button></div>`;
   }
-  const ta = document.getElementById('readEditTa'); if(ta) { ta.value = cur; ta.focus(); }
+  const ta = document.getElementById('readEditTa'); 
+  if(ta) { ta.value = cur; window._restoreEditScroll(ta); window._mountEditFab(); }
 };
 
 window.changeReadFontSize = function(dir) {
@@ -5731,6 +6012,29 @@ async function handleChatlogFiles(files) {
     document.getElementById('chatlogInput').value = '';
 }
 
+async function exportCardWithChatlogs(cardId) {
+  const card = S.cards.find(c => c.id === cardId); if (!card) return;
+  showBusy('正在打包…', '读取数据中');
+  try {
+    const full = await dbG('cards', cardId);
+    const files = [];
+    if (full && full.originalDataUrl) {
+      const ext = card.fileType.includes('webp') ? '.webp' : '.png';
+      files.push({ name: `${card.name}${ext}`, data: full.originalDataUrl.split(',')[1] });
+    } else {
+      files.push({ name: `${card.name}.json`, data: JSON.stringify(full, null, 2) });
+    }
+    const logs = S.chatlogs.filter(l => l.boundCardId === cardId);
+    logs.forEach(l => files.push({ name: `chatlogs/${l.name}`, data: l.raw }));
+    
+    document.getElementById('busySub').textContent = '生成压缩包…';
+    const zipBlob = await buildZip(files);
+    hideBusy();
+    dlB(zipBlob, `${card.name}_完整导出.zip`);
+    showToast(`已导出：卡片 + ${logs.length} 条聊天记录`);
+  } catch (e) { hideBusy(); showToast('导出失败', 'error'); }
+}
+
 async function exportChatlog(logId) {
     const log = await dbG('chatlogs', logId);
     if (!log || !log.raw) return;
@@ -5753,6 +6057,7 @@ function renderChatlogLib() {
                 <div style="display:flex; gap:4px; flex-shrink:0;">
                     <button class="expand-btn" onclick="openChatlogBind('${log.id}')">绑定</button>
                     <button class="expand-btn" onclick="openChatlogView('${log.id}', '${log.boundCardId}')">📖 阅览</button>
+                    <button class="expand-btn" onclick="expandChatlogRead('${log.id}', '${log.boundCardId}')">⛶ 全屏</button>
 <button class="expand-btn" onclick="exportChatlog('${log.id}')">💾 导出</button>
 <button class="expand-btn" style="color:var(--red); border-color:rgba(139,46,46,0.3);" onclick="deleteChatlog('${log.id}')">✕</button>
                 </div>
