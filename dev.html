@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"> 
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Marie's Chest</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#F5F0E8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
+<link rel="manifest" id="pwaManifest" href='data:application/manifest+json,{"name":"Maries Chest","short_name":"CardChest","display":"standalone","start_url":"./","background_color":"#F5F0E8","theme_color":"#F5F0E8"}'>
+
+<link rel="stylesheet" href="./style.css">
+
+<!-- ============================================================
+     Scripts (Pinyin, Web Workers)
+============================================================ -->
+
+<!-- Worker 1: Hash 计算与数据处理 (防止阻塞UI) -->
+<script id="workerCode" type="javascript/worker">
+  self.onmessage = async function(e) {
+    if (e.data.type === 'hash') {
+      const str = e.data.payload;
+      let hashHex = '';
+      if (self.crypto && self.crypto.subtle) {
+        try {
+          const buf = new TextEncoder().encode(str);
+          const hashBuffer = await self.crypto.subtle.digest('SHA-256', buf);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch(err) {}
+      }
+      if (!hashHex) {
+        let h = 5381;
+        for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i);
+        hashHex = (h >>> 0).toString(16);
+      }
+      self.postMessage({ type: 'hash_result', id: e.data.id, hash: hashHex });
+    }
+  };
+</script>
+
+<!-- Worker 2: Web Worker 异步检索与过滤 (应对输入连续键入引起掉帧) -->
+<script id="searchWorkerCode" type="javascript/worker">
+  // 模糊匹配算法：判断 pattern 是否是 str 的子序列 (如 aojiao 匹配 a..o..j..i..a..o)
+  function fuzzyMatch(pattern, str) {
+    let pIdx = 0, sIdx = 0;
+    while (pIdx < pattern.length && sIdx < str.length) {
+      if (pattern[pIdx] === str[sIdx]) pIdx++;
+      sIdx++;
+    }
+    return pIdx === pattern.length;
+  }
+
+  self.onmessage = function(e) {
+    const { type, query, list, scopes, reqId } = e.data;
+    if (type === 'search') {
+      if (!query.trim()) { self.postMessage({ type: 'search_result', reqId, ids: list.map(c => c.id) }); return; }
+      const queries = query.trim().split(/\s+/);
+      const filtered = list.filter(c => {
+        return queries.every(token => {
+          const lowerToken = token.toLowerCase();
+          if (lowerToken.startsWith('tag:')) { const tName = lowerToken.slice(4); return [...(c.tags || []), ...(c.subtags || [])].some(t => (t || '').toLowerCase().includes(tName)); }
+          if (lowerToken.startsWith('char>')) { const limit = parseInt(lowerToken.slice(5)); return !isNaN(limit) && (c.charCount || 0) > limit; }
+          if (lowerToken.startsWith('char<')) { const limit = parseInt(lowerToken.slice(5)); return !isNaN(limit) && (c.charCount || 0) < limit; }
+          
+          // 模糊匹配：只要原名包含，或者拼音缩写符合子序列，就算匹配成功
+          if (scopes.has('name') && ((c.name || '').toLowerCase().includes(lowerToken) || (c.py && fuzzyMatch(lowerToken, c.py)))) return true;
+          if (scopes.has('desc') && (c.description || '').toLowerCase().includes(lowerToken)) return true;
+          if (scopes.has('tags') && [...(c.tags || []), ...(c.subtags || [])].some(t => (t || '').toLowerCase().includes(lowerToken))) return true;
+          if (scopes.has('note') && (c.note || '').toLowerCase().includes(lowerToken)) return true;
+          return false;
+        });
+      });
+      self.postMessage({ type: 'search_result', reqId, ids: filtered.map(c => c.id) });
+    }
+  };
+</script>
+
+<script id="zipWorkerCode" type="javascript/worker">
+  self.onmessage = function(e) {
+    if (e.data.type === 'build_zip') {
+      const files = e.data.files;
+      const crcTable = new Uint32Array(256).map((t, c) => {
+          let c_ = c;
+          for (let k = 0; k < 8; k++) c_ = c_ & 1 ? 0xEDB88320 ^ (c_ >>> 1) : c_ >>> 1;
+          return c_;
+      });
+      const crc32 = (u8) => {
+          let crc = 0xFFFFFFFF;
+          for (let i = 0; i < u8.length; i++) crc = crcTable[(crc ^ u8[i]) & 0xFF] ^ (crc >>> 8);
+          return (crc ^ 0xFFFFFFFF) >>> 0;
+      };
+      const encoder = new TextEncoder();
+      let zipData = [], cenDirs = [], offset = 0;
+      
+      for (let f of files) {
+          const nameBuf = encoder.encode(f.name);
+          let dataBuf;
+          // 兼容二进制与 Base64 文本
+          if (f.data instanceof Uint8Array) {
+              dataBuf = f.data;
+          } else if (typeof f.data === 'string' && f.base64) {
+              const binary = atob(f.data);
+              dataBuf = new Uint8Array(binary.length);
+              for (let i = 0; i < binary.length; i++) dataBuf[i] = binary.charCodeAt(i);
+          } else {
+              dataBuf = encoder.encode(f.data);
+          }
+          
+          const crc = crc32(dataBuf), len = dataBuf.length;
+          const head = new Uint8Array(30 + nameBuf.length);
+          const dv = new DataView(head.buffer);
+          dv.setUint32(0, 0x04034b50, true);
+          dv.setUint16(4, 20, true); dv.setUint16(6, 0, true); dv.setUint16(8, 0, true);
+          dv.setUint32(14, crc, true); dv.setUint32(18, len, true); dv.setUint32(22, len, true);
+          dv.setUint16(26, nameBuf.length, true); dv.setUint16(28, 0, true);
+          head.set(nameBuf, 30);
+          zipData.push(head, dataBuf);
+          
+          const cen = new Uint8Array(46 + nameBuf.length);
+          const cdv = new DataView(cen.buffer);
+          cdv.setUint32(0, 0x02014b50, true);
+          cdv.setUint16(4, 20, true); cdv.setUint16(6, 20, true); cdv.setUint16(8, 0, true); 
+          cdv.setUint32(16, crc, true); cdv.setUint32(20, len, true); cdv.setUint32(24, len, true);
+          cdv.setUint16(28, nameBuf.length, true); cdv.setUint32(42, offset, true);
+          cen.set(nameBuf, 46);
+          cenDirs.push(cen);
+          offset += head.length + dataBuf.length;
+      }
+      
+      let cenLen = 0; cenDirs.forEach(c => cenLen += c.length);
+      const end = new Uint8Array(22);
+      const edv = new DataView(end.buffer);
+      edv.setUint32(0, 0x06054b50, true);
+      edv.setUint16(8, files.length, true); edv.setUint16(10, files.length, true);
+      edv.setUint32(12, cenLen, true); edv.setUint32(16, offset, true);
+      
+      const blob = new Blob([...zipData, ...cenDirs, end], {type: 'application/zip'});
+      self.postMessage({ type: 'zip_result', id: e.data.id, blob: blob });
+    }
+  };
+</script>
+
+
+<script>
+  // Service Worker 离线缓存与 PWA 注册逻辑（仅在服务器环境启用，本地双击则跳过）
+  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+    const swCode = `
+      const CACHE_NAME = 'kaku-v4-cache';
+      const urlsToCache = [ './', 'index.html' ]; // 简单骨架缓存
+      self.addEventListener('install', event => {
+        event.waitUntil( caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)) );
+      });
+      self.addEventListener('fetch', event => {
+        event.respondWith( caches.match(event.request).then(response => response || fetch(event.request)) );
+      });
+    `;
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swUrl = URL.createObjectURL(blob);
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(swUrl).then(registration => {
+        console.log('SW registered inline: ', registration.scope);
+      }).catch(err => console.log('SW registration failed: ', err));
+    });
+  }
+</script>
+
+</head>
+<body>
+<div id="splashScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--p);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease">
+  <div style="font-size:48px;font-weight:700;color:var(--ink);margin-bottom:20px;font-family:var(--sf)">Marie's Chest</div>
+  <div style="width:200px;height:4px;background:var(--p3);border-radius:2px;overflow:hidden;position:relative">
+    <div id="splashProgress" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--gold),#8bcdef);transition:width 0.3s ease"></div>
+  </div>
+  <div id="splashText" style="margin-top:12px;font-size:11px;color:var(--ink3)">正在加载...</div>
+</div>
+<script>
+  window._splashProg = 0;
+  window.setSplash = function(p, msg) {
+    window._splashProg = Math.max(window._splashProg, p);
+    const pb = document.getElementById('splashProgress'), pt = document.getElementById('splashText');
+    if(pb) pb.style.width = window._splashProg + '%';
+    if(pt) pt.textContent = msg || '正在加载...';
+  };
+  window.setSplash(30, '解析核心引擎...');
+  window.hideSplash = function() {
+    window.setSplash(100, '准备就绪');
+    setTimeout(() => {
+      const splash = document.getElementById('splashScreen');
+      if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
+    }, 300);
+  };
+</script>
+
+<div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleMobileDrawer()"></div>
+<div class="pwa-banner" id="pwaBanner">当前处于离线模式 (Offline Mode)</div>
+
+<!-- 响应式双栏应用外壳 -->
+<div class="app-container" id="appContainer">
+  <!-- 左栏：主界面列表 -->
+  <div class="left-pane" id="leftPane">
+    
+    <div class="topbar">
+  <div class="logo" onclick="scrollToTop()" style="cursor:pointer;" title="点击回到顶部"><span class="logo-m">Marie's Chest</span><span class="logo-s">CARD ARCHIVE</span></div>
+  
+  <!-- 将搜索框移到了这里，它会自动替代之前占位符的作用并推开右侧按钮 -->
+  <div class="sbox" style="margin-left: 15px;">
+    <input type="text" id="searchInput" placeholder="Search: tag:傲娇 char>5000 ..." autocomplete="off">
+    <span class="sico-clear" id="searchClear" onclick="clearSearch()">✕</span>
+    <span class="sico" title="聚焦搜索" onclick="document.getElementById('searchInput').focus()">⌕</span>
+    <div class="autocomplete-panel" id="acPanel"></div>
+  </div>
+
+  <button class="hbtn" title="搜索帮助" onclick="openModal('searchHelpModal')" style="font-weight: bold; padding: 5px 9px;">?</button>
+  <button class="hbtn" id="selectModeBtn" onclick="toggleSelectMode()">选择</button>
+  <button class="hbtn" id="themeBtn" onclick="toggleTheme()">☽</button>
+  <button class="hbtn" onclick="openSettings()">≡</button>
+</div>
+
+<div class="main-area" id="mainArea" onscroll="handleScroll()">
+  
+  <!-- 工具栏包裹层，用于悬浮空降 -->
+  <div id="toolbarWrap">
+    <!-- 原本的搜索框外壳 search-row-wrap 已经被删除了 -->
+
+    <div class="secbar" id="secbar">
+    <div class="secbar-sp"></div>
+    <div class="lbtns">
+      <button class="lbtn active" data-layout="grid" onclick="setLayout('grid')">▦</button>
+      <button class="lbtn" data-layout="list" onclick="setLayout('list')">☰</button>
+      <button class="lbtn" data-layout="magazine" onclick="setLayout('magazine')">◫</button>
+      <button class="lbtn active" id="noteToggleBtn" title="显示/隐藏卡片备注" onclick="toggleNoteDisplay()">📝</button>
+      <button class="lbtn" id="timelineBtn" title="按导入时间查看" onclick="toggleTimeline()">⏱</button>
+      <button class="lbtn" title="回收站" onclick="openTrashModal()" style="color:var(--red)">🗑️</button>
+      <button class="lbtn" id="folderBtn" title="文件夹（按分组成套查看）" onclick="toggleFolderView()">📁</button>
+      <button class="lbtn" title="角色关系图谱" onclick="openLoreMap()" style="color:var(--gold)">🕸️</button>
+    </div>
+  </div>
+
+  <div class="scopebar" id="scopebar">
+    <span class="scopelbl">SEARCH IN</span>
+    <button class="sc-chip active" data-scope="name">卡名</button>
+    <button class="sc-chip active" data-scope="desc">简介</button>
+    <button class="sc-chip active" data-scope="tags">标签</button>
+    <button class="sc-chip" data-scope="world">世界书</button>
+    <button class="sc-chip" data-scope="dialog">对白</button>
+    <button class="sc-chip" data-scope="note">备注</button>
+  </div>
+
+  <div class="filterbar-wrap">
+    <div class="filterbar-outer">
+      <div class="filterbar" id="filterbar"></div>
+      <button class="fb-toggle" id="fbToggle" onclick="toggleFilterBar()" title="展开/收起标签">▾</button>
+    </div>
+    <div class="fsort-wrap">
+    <select class="fsort" id="fsortSel"></select>
+    <div class="statsbar" id="statsbar"></div>
+  </div>
+</div>
+</div> <!-- toolbarWrap 结束 -->
+
+<div class="grid-layout" id="cardGrid" style="position:relative;">
+        <div class="vs-spacer" id="vsSpacer"></div>
+        <div class="vs-content" id="vsContent"></div>
+      </div>
+    </div>
+    
+  </div><!-- end left-pane -->
+
+  <!-- 右栏：大屏双栏时的详情面板替代品 -->
+  <div class="resizer" id="resizer"></div>
+  <div class="right-pane" id="rightPane">
+    <!-- 内容将由 openDetail() 动态转移入此 -->
+  </div>
+</div><!-- end appContainer -->
+<button class="fab" onclick="openImport()">＋</button>
+<!-- 新增的悬浮唤出按钮 (放大镜图标) -->
+<button class="fab reveal-btn" id="revealBtn" onclick="popupToolbar()" title="在当前位置唤出工具栏">⌕</button>
+<button class="fab btt-btn" id="bttBtn" onclick="scrollToTop()">↑</button>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="busy-mask" id="busyMask">
+  <div class="busy-box">
+    <div class="busy-spin" id="busySpin" style="display:none; width:38px; height:38px; margin:4px auto 12px; border:3px solid var(--p4); border-top-color:var(--ink); border-radius:50%; animation:busySpin .8s linear infinite;"></div>
+    <div class="busy-title" id="busyTitle">处理中</div>
+    <div class="busy-sub" id="busySub">请稍候…</div>
+    <div class="busy-track" id="busyTrackWrap"><div class="busy-bar" id="busyBar"></div></div>
+    <div class="busy-count" id="busyCount"></div>
+  </div>
+</div>
+
+<div class="batchbar" id="batchBar">
+  <span class="bb-cnt" id="bbCnt">已选 0</span>
+  <button onclick="batchSelectAll()">全选</button>
+  <button onclick="openBatchTag('main')">主标签</button>
+  <button onclick="openBatchTag('sub')">小标签</button>
+  <button onclick="openBatchGroup()">分组</button>
+  <button onclick="batchFav()">收藏</button>
+  <button onclick="openBatchMove()">移动</button>
+  <button onclick="batchExport()">打包导出</button>
+  <button style="color: #93c5fd; border-color: rgba(59,130,246,0.4);" onclick="batchPushToTavern()">☁️ 推送酒馆</button>
+  <button class="bb-del" onclick="batchDelete()">删除</button>
+  <button class="bb-exit" onclick="exitSelectMode()">✕</button>
+</div>
+
+<div class="confirm-mask" id="confirmMask">
+  <div class="confirm-box">
+    <div class="confirm-hd" id="confirmHd">确认</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-acts">
+      <button class="cf-no" id="confirmNo">取消</button>
+      <button class="cf-ok" id="confirmOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-item" id="ctxPreview">👁️ 预览大图</div>
+  <div class="ctx-item" id="ctxEdit">✎ 快速编辑</div>
+  <div class="ctx-item" id="ctxMove">→ 移动分区</div>
+  <div class="ctx-item" id="ctxPush" style="color: #3b82f6;">☁️ 推送至酒馆</div>
+  <div class="ctx-item" id="ctxExport">↑ 导出源文件</div>
+  <div class="ctx-divider"></div>
+  <div class="ctx-item dan" id="ctxDelete">✕ 移至回收站</div>
+</div>
+
+<div class="modal-mask" id="dupScanModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">DUPLICATE SCANNER</span><button class="mclose" onclick="closeModal('dupScanModal')">✕</button></div><div class="modal-body" id="dupScanBody" style="max-height: 60vh; overflow-y: auto;"></div></div></div>
+
+<div class="modal-mask" id="trashModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">RECYCLE BIN</span><button class="mclose" onclick="closeModal('trashModal')">✕</button></div><div class="modal-body" id="trashBody"></div></div></div>
+
+<div class="modal-mask" id="pickModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title" id="pickTitle">SELECT</span><button class="mclose" onclick="closeModal('pickModal')">✕</button></div><div class="modal-body" id="pickBody"></div></div></div>
+<div class="modal-mask" id="clviewModal">
+  <div class="modal-box" style="max-height:85vh; border-top: 2px solid #8bcdef ;">
+    <div class="modal-hd">
+      <span class="modal-title" style="color:#8bcdef ;">历史对话阅览</span>
+      <button class="mclose" onclick="closeModal('clviewModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div class="chat-wrap" id="clviewBody" style="background:var(--p2); border-radius:0; max-height:65vh;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title" id="detailTitle">—</span>
+      <div style="display:flex; gap:5px;">
+        <button class="mclose fs-btn" onclick="toggleDetailFullscreen()" title="全屏/还原">⛶</button>
+        <button class="mclose" onclick="closeModal('detailModal')">✕</button>
+      </div>
+    </div>
+    <div class="note-banner" id="noteBanner"></div>
+	<div class="ver-bar" id="detailVerBar" style="display:none;"></div>
+    <div class="modal-body" id="detailContent"></div>
+  </div>
+</div>
+
+
+
+<!-- 快速预览弹窗 -->
+<div class="modal-mask" id="quickPreviewModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title" style="color:var(--ink4);font-size:10px;letter-spacing:0.2em;">QUICK PREVIEW</span><button class="mclose" onclick="closeModal('quickPreviewModal')">✕</button></div><div class="modal-body" id="qpBody" style="padding:0; overflow-y:auto; max-height:calc(100vh - 120px);"></div></div></div>
+
+<!-- 链接编辑弹窗 -->
+<div class="modal-mask" id="linkEditModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">EDIT LINKS</span><button class="mclose" onclick="closeModal('linkEditModal')">✕</button></div><div class="modal-body"><div id="lkEditRows" style="max-height:55vh;overflow-y:auto;padding-bottom:6px"></div><div style="display:flex;gap:8px;margin-top:10px"><button class="actbtn pri" style="flex:1" onclick="_lkEditSave()">💾 保存所有链接</button><button class="actbtn" style="flex:1" onclick="closeModal('linkEditModal')">取消</button></div></div></div></div>
+
+<!-- 长文本沉浸式编辑弹窗 -->
+<div class="modal-mask" id="fieldEditModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title" id="fieldEditTitle">编辑</span><button class="mclose" onclick="closeModal('fieldEditModal')">✕</button></div><div class="modal-body"><textarea id="fieldEditArea" style="width:100%;height:300px;font-size:calc(13px * var(--fs-scale));line-height:1.8;resize:none;background:var(--p);border:1px solid var(--bd);color:var(--ink);padding:12px;font-family:var(--sf);border-radius:var(--r);outline:none" placeholder="在这里编辑..."></textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="actbtn" style="flex:0 0 auto; color:var(--gold); border-color:var(--gold);" onclick="_fieldEditUndo()" title="撤回到打开时的内容">↩ 撤回修改</button><button class="actbtn pri" style="flex:1" onclick="_fieldEditSave()">💾 保存</button></div></div></div></div>
+<div class="modal-mask" id="importModal">
+  <div class="modal-box">
+    <div class="modal-hd"><span class="modal-title">IMPORT</span><button class="mclose" onclick="closeModal('importModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="drop-zone" id="dropZone" onclick="triggerFile()"><div class="drop-icon">◫</div><p>点击选择文件</p><small>APP内若只能单选，可多次点击累加后一起导入</small></div>
+      <input type="file" id="fileInput" multiple style="display:none">
+      <div id="pendBox" style="display:none;background:var(--p3);border:1px solid var(--bd);padding:9px 11px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;font-size:11px;color:var(--ink2);margin-bottom:6px">待导入 <b id="pendCount" style="color:var(--gold);margin:0 3px">0</b> 个文件<button onclick="clearPending()" style="margin-left:auto;background:none;border:1px solid var(--bd);color:var(--ink3);font-size:10px;padding:2px 8px;border-radius:var(--r);cursor:pointer">清空</button></div>
+        <div id="pendList" style="font-size:10px;color:var(--ink3);max-height:90px;overflow-y:auto;font-family:monospace;line-height:1.6;margin-bottom:7px"></div>
+        <div class="act-row"><button class="actbtn" onclick="triggerFile()">＋ 继续添加</button><button class="actbtn pri" onclick="startImport()">开始导入</button></div>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:6px">导入到：<select id="importSection" class="inp" style="padding:3px 6px;font-size:11px"></select></div>
+      <div class="prog-box" id="progBox">
+          <div class="prog-row"><span id="progLabel">处理中...</span><span id="progCount">0/0</span></div>
+          <div class="prog-track"><div class="prog-bar" id="progBar"></div></div>
+          <div class="imp-log" id="impLog"></div>
+          <button onclick="document.getElementById('impLog').innerHTML=''; showToast('日志已清空');" style="width:100%; margin-top:6px; background:none; border:1px dashed var(--bd); color:var(--ink3); font-size:10px; cursor:pointer; padding:4px; border-radius:var(--r); transition: background 0.2s;" onmouseover="this.style.background='var(--p3)'" onmouseout="this.style.background='none'">清空历史日志</button>
+      </div>
+      <div id="dupList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="searchHelpModal">
+  <div class="modal-box" style="max-width: 420px;">
+    <div class="modal-hd">
+      <span class="modal-title">SEARCH HELP</span>
+      <button class="mclose" onclick="closeModal('searchHelpModal')">✕</button>
+    </div>
+    <div class="modal-body" style="font-size: 13px; line-height: 1.8; color: var(--ink2); padding: 18px 20px; font-family: var(--sf);">
+      <div style="font-weight:700; color:var(--ink); font-size: 15px; margin-bottom: 12px;">高级搜索语法说明</div>
+      卡库支持使用特定前缀进行精确的高级筛选，现在配合 <b>Web Worker</b> 更加流畅：<br><br>
+      • <b style="color:var(--gold)">纯文本</b>：直接输入关键词，默认搜索卡名、简介、标签等。<br>
+      • <b style="color:var(--gold)">tag:标签名</b>：只搜索包含该标签的卡片。例如 <code style="background:var(--p3);padding:2px 6px;border-radius:4px;color:var(--ink);">tag:傲娇</code><br>
+      • <b style="color:var(--gold)">char&gt;数字</b>：搜索字数大于该数字的卡片。例如 <code style="background:var(--p3);padding:2px 6px;border-radius:4px;color:var(--ink);">char>5000</code><br>
+      • <b style="color:var(--gold)">char&lt;数字</b>：搜索字数小于该数字的卡片。例如 <code style="background:var(--p3);padding:2px 6px;border-radius:4px;color:var(--ink);">char&lt;1000</code><br><br>
+      <div style="background:var(--p3); border:1px solid var(--bd); padding:10px; border-radius:var(--r); color:var(--ink3); font-size:11px;">
+        * 提示：不同条件可用空格隔开。拼音搜索也已集成，支持输入首字母智能补全。<br>例如输入：<b>「女仆 tag:西幻 char>3000」</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-hd"><span class="modal-title">SETTINGS</span><button class="mclose" onclick="closeModal('settingsModal')">✕</button></div>
+    <div class="modal-body">
+      
+      <!-- ✨ 新增：Tavern API 云端集成面板 ✨ -->
+      <div class="set-card">
+  <h4>🎨 Theme Style — 主题配色</h4>
+  <div class="inp-row">
+    <select id="styleSelect" class="inp" style="flex:1" onchange="applyStyle(this.value)">
+      <option value="default">原版（温暖棕）</option>
+      <option value="tianyi">天依蓝（奶黄 + 浅蓝）</option>
+      <option value="nature">自然森绿 (Nature)</option>
+      <option value="deepsea">深海流金 (Deepsea)</option>
+      <option value="cyber">赛博终端 (Cyber)</option>
+      <option value="receipt">小票风格 (Receipt)</option>
+      <option value="newspaper">报纸风格 (Newspaper)</option>
+      <option value="pixel">像素风格 (Pixel)</option>
+      <option value="gradient">黑白渐变 (Gradient)</option>
+      <option value="lines">简约线条 (Lines)</option>
+    </select>
+  </div>
+</div>
+      
+      <div class="set-card">
+        <h4>🚀 Tavern API Proxy — 酒馆云端集成</h4>
+        <div class="inp-row" style="margin-top:0"><input type="text" class="inp" id="tavernProxyUrl" placeholder="Cloudflare Worker 地址" style="flex:1"><input type="text" class="inp" id="tavernLocalPort" placeholder="本地端口(默认8000)" style="width:120px;"></div>
+        <div class="act-row"><button class="actbtn" onclick="saveTavernConfig()">保存 API 配置</button></div>
+        <div class="act-row">
+          <button class="actbtn pri" onclick="pullFromTavern()">↓ 从酒馆批量拉取卡片 (Pull)</button>
+        </div>
+        <div class="act-row">
+          <button class="actbtn" onclick="pushAllToTavern()">↑ 推送全部卡片至酒馆 (Push All)</button>
+        </div>
+        <div class="act-row">
+          <button class="actbtn pri" onclick="syncWithTavern()">🔄 一键双向同步 (Sync All)</button>
+        </div>
+        <p style="margin-top:5px;font-size:10px;color:var(--ink3)">通过 Worker 代理自动绕过 CORS 并注入密码。保存后即可在详情页中一键推送热更新！</p>
+      </div>
+
+      <div class="set-card">
+        <h4>UI Settings — 界面设置</h4>
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">网格大小缩放：<span id="gridZoomVal" style="font-weight:bold;color:var(--ink);">150</span>px</div>
+        <input type="range" id="gridZoom" min="90" max="240" value="150" style="width:100%;margin-bottom:10px" oninput="changeGridZoom(this.value)">
+        
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:5px">全局字号缩放：<span id="fontScaleVal" style="font-weight:bold;color:var(--ink);">1.10</span>倍</div>
+        <input type="range" id="fontScale" min="0.8" max="1.5" step="0.05" value="1.10" style="width:100%;margin-bottom:10px" oninput="changeFontScale(this.value)">
+        <div style="font-size:11px; margin-top:8px; display:flex; align-items:center; gap:6px;">
+  导入画质：
+  <select id="imgCompressStrategy" class="inp" style="padding:2px 4px; font-size:11px;" onchange="dbP('meta', {key: 'imgStrategy', value: this.value})">
+    <option value="1200">标准压缩 (1200px 推荐)</option>
+    <option value="800">极致流畅 (800px 省内存)</option>
+    <option value="99999">无损原图 (不压缩)</option>
+  </select>
+</div>
+      </div>
+
+      <div class="set-card">
+        <h4>WebDAV Cloud Sync — 云同步</h4>
+        <div class="inp-row" style="margin-top:0"><input type="text" class="inp" id="wdUrl" placeholder="WebDAV URL (如 https://dav.jianguoyun.com/dav/)"></div>
+        <div class="inp-row"><input type="text" class="inp" id="wdUser" placeholder="用户名"><input type="password" class="inp" id="wdPass" placeholder="密码/应用密码"></div>
+        <div style="font-size:11px; margin-top:8px; display:flex; align-items:center; gap:6px;">
+          <input type="checkbox" id="wdAutoSync" onchange="toggleAutoSync(this.checked)"> <label for="wdAutoSync">开启后台静默同步</label>
+        </div>
+        <div class="act-row">
+          <button class="actbtn" onclick="saveWebdavConfig()">保存配置</button>
+          <button class="actbtn" onclick="testWebdav()">测试连接</button>
+        </div>
+        <div class="act-row"><button class="actbtn pri" onclick="syncPush()">↑ 推送到云端</button><button class="actbtn pri" onclick="syncPull()">↓ 从云端拉取</button></div>
+        <div id="lastSyncTime" style="font-size:10px;color:var(--ink3);margin-top:7px">上次同步: 从未</div>
+        <p style="margin-top:5px;font-size:10px;color:var(--ink3)">纯增量同步，极速且节省内存。需服务端支持CORS。<br><b style="color:var(--red)">安全提醒：</b>密码将明文保存在浏览器中，请务必使用网盘的<b>应用专属密码（WebDAV密码）</b>，切勿使用账号登录密码！</p>
+      </div>
+
+      <div class="set-card">
+        <h4>Data & Trash — 数据与回收站</h4>
+        <div class="act-row">
+          <button class="actbtn pri" onclick="openTrashModal()">查看回收站</button>
+          <button class="actbtn" style="border-color:#10b981;color:#10b981;" onclick="openSnapshotModal()">⏳ 时光机(恢复快照)</button>
+        </div>
+        
+        <!-- 【新增功能：环境配置导出导入按钮】 -->
+        <div class="act-row" style="margin-top:8px;">
+          <button class="actbtn" style="border-color:var(--gold);color:var(--gold)" onclick="exportConfig()">⚙️ 导出环境配置</button>
+          <button class="actbtn" style="border-color:var(--gold);color:var(--gold)" onclick="document.getElementById('configImportInput').click()">📥 导入环境配置</button>
+          <input type="file" id="configImportInput" accept=".json" style="display:none" onchange="importConfig(this)">
+        </div>
+
+        <div class="act-row" style="margin-top:8px;">
+          <button class="actbtn pri" onclick="exportAllData()">导出完整备份</button>
+          <button class="actbtn" onclick="exportOriginals()">导出原始文件</button>
+        </div>
+        <div class="act-row">
+          <button class="actbtn" onclick="exportAllJson()">仅导出纯文本(JSON)</button>
+        </div>
+        <div class="act-row"><button class="actbtn" style="border-color:var(--gold);color:var(--gold)" onclick="openDupScanner()">🔍 扫描相似/重复卡片</button></div>
+        <div class="act-row"><button class="actbtn" onclick="triggerRestore()">恢复备份</button></div>
+        <input type="file" id="restoreInput" accept=".json" style="display:none">
+        <p style="margin-top:5px;font-size:10px;color:var(--ink3)">「导出原始文件」逐一下载各卡原始文件，可直接导入酒馆</p>
+      </div>
+            <div class="set-card">
+        <h4>🎨 Tag Colors — 标签专属颜色</h4>
+        <div id="tagColorList" style="margin-bottom:8px;"></div>
+        <div class="inp-row">
+          <input type="text" class="inp" id="newTcName" placeholder="输入标签名(如: NSFW)">
+          <input type="color" id="newTcColor" value="#ff6666" style="width:40px; height:28px; padding:0; border:none; cursor:pointer; border-radius:4px;">
+          <button onclick="addTagColor()">设定颜色</button>
+        </div>
+      </div>
+
+      <div class="set-card"><h4>Groups — 分组</h4><div id="groupList"></div><div class="inp-row"><input type="text" class="inp" id="newGroupInput" placeholder="新建分组..."><button onclick="addGroup()">添加</button></div></div>
+      <div class="set-card">
+  <h4>🏷️ 标签管理器 (重命名/合并)</h4>
+  <div class="inp-row" style="margin-top:0;">
+    <input type="text" class="inp" id="tmOldTag" placeholder="旧标签名 (如: 傲娇的)">
+    <input type="text" class="inp" id="tmNewTag" placeholder="新标签名 (如: 傲娇)">
+  </div>
+  <div class="act-row">
+    <button class="actbtn pri" onclick="executeTagRename()">执行全局替换</button>
+  </div>
+  <p style="margin-top:5px;font-size:10px;color:var(--ink3)">系统会遍历所有卡片，将旧标签替换为新标签。</p>
+</div>
+      
+      <div class="set-card">
+        <h4>Tag Hierarchy — 标签层级映射</h4>
+        <p style="font-size:10px;color:var(--ink3);margin-bottom:8px">为小标签指定父级，搜索栏将自动折叠展示 ▾</p>
+        <div id="tagParentLib"></div>
+      </div>
+      
+      <div class="set-card"><h4>Sections — 分区</h4><div id="sectionList"></div><div class="inp-row"><input type="text" class="inp" id="newSectionInput" placeholder="新建分区..."><button onclick="addSection()">添加</button></div></div>
+      
+      <div class="set-card">
+        <h4>Chat Logs — 聊天记录库</h4>
+        <p style="font-size:10px;color:var(--ink3);margin-bottom:6px">独立存储的对话记录，可在角色详情中挂载绑定</p>
+        <div id="chatlogLib"></div>
+        <div class="act-row" style="margin-top:8px">
+          <button class="actbtn pri" onclick="document.getElementById('chatlogInput').click()">📜 导入记录 (.jsonl/.txt)</button>
+        </div>
+        <input type="file" id="chatlogInput" multiple accept=".txt,.json,.jsonl" style="display:none" onchange="handleChatlogFiles(this.files)">
+      </div>
+	  
+      <div class="set-card"><h4>Help — 帮助</h4><button class="actbtn" style="width:100%" onclick="replayTutorial()">重看新手教程</button></div>
+      <div class="set-card"><h4>Danger Zone</h4><button class="actbtn dan" style="width:100%" onclick="clearAllData()">清空所有数据</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="moveModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">MOVE TO SECTION</span><button class="mclose" onclick="closeModal('moveModal')">✕</button></div><div class="modal-body" id="moveSectionList"></div></div></div>
+<div class="modal-mask" id="editTagModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">EDIT TAGS</span><button class="mclose" onclick="closeModal('editTagModal')">✕</button></div><div class="modal-body" id="editTagContent"></div></div></div>
+<div class="modal-mask" id="cardReplaceModal"><div class="modal-box" style="max-width:400px;"><div class="modal-hd"><span class="modal-title">🔁 局部内容精确替换</span><button class="mclose" onclick="closeModal('cardReplaceModal')">✕</button></div><div class="modal-body"><div style="font-size:11px; color:var(--ink3); margin-bottom:10px;">将在这张卡片的描述、性格、备忘及所有世界书中执行全局替换。</div><div class="inp-row" style="margin-top:0"><input type="text" class="inp" id="crFindInp" placeholder="要查找的旧文本..."></div><div class="inp-row"><input type="text" class="inp" id="crReplaceInp" placeholder="要替换的新文本（留空则为删除）..."></div><div class="act-row"><button class="actbtn pri" style="width:100%" onclick="executeCardReplace()">确认执行无损热更新</button></div></div></div></div>
+<div class="modal-mask" id="grpModal"><div class="modal-box"><div class="modal-hd"><span class="modal-title">ASSIGN GROUP</span><button class="mclose" onclick="closeModal('grpModal')">✕</button></div><div class="modal-body" id="grpModalList"></div></div></div>
+<div class="modal-mask" id="tavernPullModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">PULL FROM TAVERN</span>
+      <button class="mclose" onclick="closeModal('tavernPullModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">
+        已从酒馆获取角色列表。系统已自动比对本地卡库。
+      </div>
+      <div class="inp-row" style="margin-bottom:10px;">
+        <input type="text" class="inp" id="tpSearchInp" placeholder="🔍 搜索云端角色名..." oninput="filterTavernPullList(this.value)" style="width:100%;">
+      </div>
+      <div class="act-row" style="margin-bottom:10px;">
+        <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="tpCheckSmart()">✨ 智能勾选 (本地缺失)</button>
+        <button class="actbtn" onclick="tpCheckAll()">全选</button>
+        <button class="actbtn" onclick="tpCheckNone()">全不选</button>
+      </div>
+      <div id="tpList" style="max-height:50vh; overflow-y:auto; border:1px solid var(--bd); border-radius:var(--r); background:var(--p2);"></div>
+      <div class="act-row" style="margin-top:12px;">
+        <button class="actbtn pri" onclick="executeTavernPull()">⬇ 确认拉取选中的卡片</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="webdavPullModal">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <span class="modal-title">WEBDAV CLOUD RECOVERY</span>
+      <button class="mclose" onclick="closeModal('webdavPullModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px; color:var(--ink2); margin-bottom:10px;">
+        从云端读取到了以下备份。你可以单独勾选需要的卡片恢复到本地。
+      </div>
+      <div class="inp-row" style="margin-bottom:10px;">
+        <input type="text" class="inp" id="wdSearchInp" placeholder="🔍 搜索云端备份名..." oninput="filterWebdavPullList(this.value)" style="width:100%;">
+      </div>
+      <div class="act-row" style="margin-bottom:10px;">
+        <button class="actbtn" style="border-color:var(--gold); color:var(--gold);" onclick="wdCheckSmart()">✨ 智能勾选 (本地缺失)</button>
+        <button class="actbtn" onclick="wdCheckAll()">全选</button>
+        <button class="actbtn" onclick="wdCheckNone()">全不选</button>
+      </div>
+      <div id="wdList" style="max-height:50vh; overflow-y:auto; border:1px solid var(--bd); border-radius:var(--r); background:var(--p2); padding: 5px;"></div>
+      <div class="act-row" style="margin-top:12px;">
+        <button class="actbtn pri" onclick="executeWebdavPull()">☁️ 从云端恢复选中项</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="read-mask" id="readMask">
+<div class="read-box">
+<div class="read-hd">
+  <div style="display:flex; align-items:center; gap:8px;">
+    <button class="expand-btn" id="toggleSidebarBtn" style="display:none; font-size:16px; padding:2px 8px;" onclick="toggleReadSidebar()">☰</button>
+    <span class="read-title" id="readTitle">—</span>
+  </div>
+  <div style="display:flex;gap:5px">
+    <button class="expand-btn" id="readEditBtn" style="display:none; font-weight:bold;" onclick="_readEditCurrent()">✏️ 编辑</button>
+    <button class="expand-btn" onclick="copyReadText()" style="font-weight:bold; color:var(--gold); border-color:var(--gold);">一键复制</button>
+    <button class="expand-btn" onclick="changeReadFontSize(-1)">A-</button>
+    <button class="expand-btn" onclick="changeReadFontSize(1)">A+</button>
+    <button class="mclose" style="margin-left:8px" onclick="closeRead()">✕</button>
+  </div>
+</div>
+<div class="read-inner-flex" style="display:flex; flex:1; overflow:hidden; position:relative;">
+  <div class="read-sb-backdrop" id="readSbBackdrop" onclick="toggleReadSidebar()" style="position:absolute;inset:0;z-index:15;background:rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .24s;"></div>
+  <div id="readSidebar" style="position:absolute;top:0;left:0;bottom:0;z-index:20;width:240px;max-width:78%;box-shadow:6px 0 24px rgba(0,0,0,.18);transform:translateX(-102%);transition:transform .26s cubic-bezier(.2,.9,.3,1);background:var(--p3);overflow-y:auto;display:none;padding:6px 0;"></div>
+  <div class="read-body" id="readBody" style="flex:1;" ondblclick="_readDblEdit(event)"></div>
+  <!-- 悬浮导航按钮 -->
+  <div class="read-nav-floating" id="readNavFloating" style="display:none;">
+    <button class="read-nav-btn" id="rnFirst" onclick="navWbFullScreen('first')" title="第一条">⇈</button>
+    <button class="read-nav-btn" id="rnPrev" onclick="navWbFullScreen('prev')" title="上一条">↑</button>
+    <button class="read-nav-btn" id="rnNext" onclick="navWbFullScreen('next')" title="下一条">↓</button>
+    <button class="read-nav-btn" id="rnLast" onclick="navWbFullScreen('last')" title="最后一条">⇊</button>
+  </div>
+</div>
+</div>
+</div>
+
+<div class="lightbox-mask" id="lightboxMask" onclick="closeLightbox()">
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <button class="lb-dl" id="lbDlBtn" onclick="downloadLightboxImage(event)">⬇ 下载原图</button>
+</div>
+
+<div class="global-drop-mask" id="globalDrop" onclick="this.classList.remove('drag')">
+  <div style="border:3px dashed var(--gold);padding:40px;border-radius:16px;background:var(--p2);color:var(--ink);font-family:var(--sf);font-weight:700;font-size:18px;">
+    松开鼠标，立即导入文件
+  </div>
+</div>
+
+<div class="tut-mask" id="tutMask">
+<div class="tut-box">
+<div class="tut-icon" id="tutIcon">📇</div>
+<div class="tut-step" id="tutStep">1 / 6</div>
+<div class="tut-title" id="tutTitle">欢迎来到卡库</div>
+<div class="tut-text" id="tutText">这里是你的酒馆资源收纳馆～</div>
+<div class="tut-dots" id="tutDots"></div>
+<div class="tut-acts">
+<button class="tut-skip" onclick="endTutorial()">跳过</button>
+<button class="tut-next" id="tutNext" onclick="tutNext()">下一步</button>
+</div>
+</div>
+</div>
+<script src="./libs.js"></script>
+<script src="./api.js"></script>
+<script src="./main.js"></script>
+</body>
+</html>
