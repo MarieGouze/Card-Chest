@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📇</text></svg>">
 <link rel="manifest" id="pwaManifest" href='data:application/manifest+json,{"name":"Maries Chest","short_name":"CardChest","display":"standalone","start_url":"./","background_color":"#F5F0E8","theme_color":"#F5F0E8"}'>
 
-<script type="text/javascript" src="https://gc.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=r_NFLVoRHQ_LE6dmJGvC2wGTCQFvcuOJkSOH7OzyUSOMo3JseT2ihsUaJr7rMPJbyMcNRE1NxrYV3yaY-kNKo5shfMAaRQKY2smGC-pSYKr5Dko1TmJH65Q4JMgRkAX1oMjrtyLVLSM3TgPjivu0v5cNUGfsmEC2ADeSpxUcRaoAbC8m745C69LeCoEOAis5Rd3XDyYYHUaE-jBjdZzc1f3zHExdJCgHV8a8J9VUtOIedu9ui2c6uvm9ewzRCeUPqm151B_j-ZTFFAt44UIIUA" charset="UTF-8"></script><style>
+<style>
 /* =======================================
    基础变量与重置 
 ======================================= */
@@ -1272,42 +1272,26 @@ return {isSupported: isSupported,parse: parse,patchDict: patchDict,genToken: gen
 <div id="splashScreen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--p);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease">
   <div style="font-size:48px;font-weight:700;color:var(--ink);margin-bottom:20px;font-family:var(--sf)">Marie's Chest</div>
   <div style="width:200px;height:4px;background:var(--p3);border-radius:2px;overflow:hidden;position:relative">
-    <div id="splashProgress" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--gold),#8bcdef );transition:width 0.3s ease"></div>
+    <div id="splashProgress" style="position:absolute;left:0;top:0;bottom:0;width:0%;background:linear-gradient(90deg,var(--gold),#8bcdef);transition:width 0.3s ease"></div>
   </div>
   <div id="splashText" style="margin-top:12px;font-size:11px;color:var(--ink3)">正在加载...</div>
 </div>
 <script>
-(function(){
-  const prog = document.getElementById('splashProgress');
-  const txt = document.getElementById('splashText');
-  let percent = 0;
-  function setProg(p, msg) {
-    percent = Math.max(percent, p);
-    if(prog) prog.style.width = percent + '%';
-    if(txt) txt.textContent = msg || '正在加载...';
-  }
-  if(document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setProg(40, 'DOM就绪...'));
-  } else { setProg(40, 'DOM就绪...'); }
-  
-  // 监听数据加载完成事件
-  window.addEventListener('cardsLoaded', () => {
-    setProg(100, '准备就绪');
+  window._splashProg = 0;
+  window.setSplash = function(p, msg) {
+    window._splashProg = Math.max(window._splashProg, p);
+    const pb = document.getElementById('splashProgress'), pt = document.getElementById('splashText');
+    if(pb) pb.style.width = window._splashProg + '%';
+    if(pt) pt.textContent = msg || '正在加载...';
+  };
+  window.setSplash(30, '解析核心引擎...');
+  window.hideSplash = function() {
+    window.setSplash(100, '准备就绪');
     setTimeout(() => {
       const splash = document.getElementById('splashScreen');
-      if(splash) {
-        splash.style.opacity = '0';
-        setTimeout(() => splash.remove(), 500);
-      }
+      if(splash) { splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
     }, 300);
-  });
-  
-  // 兜底防卡死
-  setTimeout(() => {
-    const splash = document.getElementById('splashScreen');
-    if(splash && splash.style.opacity !== '0') { setProg(100, '强制进入'); splash.style.opacity = '0'; setTimeout(() => splash.remove(), 500); }
-  }, 4000);
-})();
+  };
 </script>
 
 <div class="drawer-backdrop" id="drawerBackdrop" onclick="toggleMobileDrawer()"></div>
@@ -2074,7 +2058,7 @@ if (mLm) { S.lowMemoryMode = mLm.value; } else { S.lowMemoryMode = false; }
   renderAll(); bindEvents(); maybeShowTutorial();
   migrateThumbs(); // 恢复：后台静默生成缺失的缩略图
   if (webdavConfig.url && webdavConfig.autoSync) setTimeout(autoSyncCheck, 3000);
-  window.dispatchEvent(new Event('cardsLoaded')); // 触发加载完成事件
+  if (window.hideSplash) window.hideSplash(); // 关闭加载动画
 }
 
 function checkSplitPaneMode() {
