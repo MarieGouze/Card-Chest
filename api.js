@@ -287,7 +287,7 @@ async function executeTavernPull() {
              await dbP('cards', newCard); pullOk++;
                           if (!window._batchImportedNames) window._batchImportedNames = new Set();
              window._batchImportedNames.add(ci.name);
-        } catch(ex) {}
+        } catch(ex) { console.warn("拉取单张卡片失败:", ex); }
     }
     
     hideBusy(); await loadCardsLightweight(); renderAll();
@@ -507,9 +507,10 @@ async function startImport() {
              <div class="diff-side"><h5>新导入</h5>Char: <span class="${card.charCount>hasNameDup.charCount?'d-high':''}">${fmtN(card.charCount)}</span><br>${d2}</div>
           </div>
           <div class="dup-acts">
-            <button class="dbtn" onclick="acceptDup('${card.id}', this,'add')">保留两者</button>
-            <button class="dbtn ow" onclick="acceptDup('${card.id}', this,'replace','${hasNameDup.id}')">覆盖旧卡</button>
-          </div>
+  <button class="dbtn" onclick="acceptDup('${card.id}', this,'add')">保留两者</button>
+  <button class="dbtn" onclick="acceptDup('${card.id}', this,'merge','${hasNameDup.id}')" style="color:#10b981; border-color:#10b981;">智能合并</button>
+  <button class="dbtn ow" onclick="acceptDup('${card.id}', this,'replace','${hasNameDup.id}')">覆盖旧卡</button>
+</div>
         `;
         document.getElementById('dupList').appendChild(dupEl);
         window['_tmp_'+card.id] = card; 
@@ -529,7 +530,21 @@ async function startImport() {
 
 async function acceptDup(cid, btn, act, oldId) {
   const c = window['_tmp_'+cid]; if(!c) return;
-  if(act==='replace') { await dbD('cards', oldId); c.id = oldId; }
+  if(act==='replace') { 
+      await dbD('cards', oldId); c.id = oldId; 
+  } else if (act === 'merge') {
+      const oldCard = await dbG('cards', oldId);
+      if (oldCard) {
+          // 合并世界书（去重）
+          const existingKeys = new Set((oldCard.worldBookEntries||[]).map(e => e.keys));
+          const newWb = (c.worldBookEntries||[]).filter(e => !existingKeys.has(e.keys));
+          c.worldBookEntries = [...(oldCard.worldBookEntries||[]), ...newWb];
+          // 保留旧卡的聊天记录和备注
+          c.dialogEntries = oldCard.dialogEntries || c.dialogEntries;
+          c.note = oldCard.note || c.note;
+          await dbD('cards', oldId); c.id = oldId;
+      }
+  }
   await dbP('cards', c); delete window['_tmp_'+cid];
   btn.parentElement.parentElement.style.opacity = '0.3'; btn.parentElement.parentElement.style.pointerEvents = 'none'; btn.textContent = '已处理';
   loadCardsLightweight().then(()=>renderGrid());
@@ -803,8 +818,7 @@ function triggerRestore() {
                   if(c && c.id) { const ex = await dbG('cards', c.id); if(!ex) { await dbP('cards', c); added++; } }
                   document.getElementById('busySub').textContent = `正在写入: ${c.name || '未知'}`;
                   document.getElementById('busyBar').style.width = Math.min(100, (seen / total) * 100) + '%';
-                } catch(e) {}
-                buf = buf.slice(scanPos+1); scanPos=0; objStart=-1;
+                } catch(e) { console.warn("恢复备份解析单条数据失败:", e); }
                 // 强制让出主线程，洗掉内存碎片
                 await new Promise(r => setTimeout(r, 0));
                 continue;

@@ -7,6 +7,8 @@
   --red:#8B2E2E;--gold:#B8963E;
   --bd:rgba(44,36,22,.12);--bd2:rgba(44,36,22,.06);
   --sh:rgba(44,36,22,.08);
+    --bg-img: none;
+  --bg-blur: 16px;
   /* 优化字体：更精致的衬线体与现代无衬线体 */
   --sf: 'Playfair Display', 'Noto Serif SC', 'Songti SC', serif;
   --ss: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Helvetica Neue", sans-serif;
@@ -22,7 +24,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden; max-width: 100vw;}
 /* 开启全局字体抗锯齿平滑渲染，让所有文字都变得细腻柔和 */
-body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;flex-direction:column;transition:background .3s,color .3s; position: relative; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;}
+body{font-family:var(--ss);background:var(--p); background-image:var(--bg-img); background-size:cover; background-position:center; background-attachment:fixed; color:var(--ink);display:flex;flex-direction:column;transition:background .3s,color .3s; position: relative; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;}
 /* =======================================
    多主题样式库 (天依蓝 + 卡库风格)
 ======================================= */
@@ -185,19 +187,11 @@ body{font-family:var(--ss);background:var(--p);color:var(--ink);display:flex;fle
   --bd2: rgba(168, 191, 171, 0.08);
   --sh: rgba(0, 0, 0, 0.4);
 }
-[data-style="nature"] .actbtn.pri, [data-style="nature"] .act-row button:first-child, [data-style="nature"] .ver-chip.active {
-  background-color: #6eb872 !important; 
-  border-color: #6eb872 !important; 
-  color: #fff !important; 
-  font-weight: 700 !important; /* 加粗字体 */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important; /* 文字阴影 */
-  box-shadow: 0 2px 6px rgba(110, 184, 114, 0.25) !important; /* 收缩边缘阴影 */
-  transition: all 0.3s ease;
+:root[data-style="nature"] .actbtn.pri, :root[data-style="nature"] .act-row button:first-child, :root[data-style="nature"] .ver-chip.active {
+  background-color: #6eb872; border-color: #6eb872; color: #fff; font-weight: 700; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15); box-shadow: 0 2px 6px rgba(110, 184, 114, 0.25); transition: all 0.3s ease;
 }
-[data-style="nature"] .actbtn.pri:hover, [data-style="nature"] .act-row button:first-child:hover { 
-  background-color: #5ca360 !important; 
-  border-color: #5ca360 !important; 
-  transform: translateY(-1px); 
+:root[data-style="nature"] .actbtn.pri:hover, :root[data-style="nature"] .act-row button:first-child:hover { 
+  background-color: #5ca360; border-color: #5ca360; transform: translateY(-1px); 
 }
 
 /* 8. 赛博终端 (Cyber - 对应高反差黄，锐利科技感) */
@@ -524,6 +518,10 @@ body.has-mouse .card-item:hover .card-hover-actions { opacity: 1 !important; poi
 .modal-box{background:var(--p2);border-top:2px solid var(--ink);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;padding:0;transform:translateY(28px);transition:transform .25s;-webkit-overflow-scrolling:touch}
 .modal-mask.show .modal-box{transform:translateY(0)}
 @media(min-width:640px){.modal-mask{align-items:center}.modal-box{border:2px solid var(--ink);max-height:88vh}}
+.modal-handle { display: none; }
+@media(max-width: 768px) {
+  .modal-handle { display: block; width: 36px; height: 4px; background: var(--bd); border-radius: 2px; margin: 8px auto 0; }
+}
 .modal-hd{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--p2);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:20}
 .modal-title{font-size:calc(11px * var(--fs-scale));font-weight:700;font-family:var(--sf);letter-spacing:.1em;color:var(--ink);text-transform:uppercase}
 .mclose{background:var(--p3);border:1px solid var(--bd);color:var(--ink);font-size:14px;cursor:pointer;padding:4px 11px;border-radius:var(--r);font-weight:700;min-width:32px;text-align:center;flex-shrink:0;line-height:1.2;transition:all .2s}
@@ -969,8 +967,8 @@ mark{background:rgba(184,150,62,.3);color:var(--gold)}
 .topbar, .secbar, .filterbar-wrap {
   background: var(--p2) !important; /* 兼容极老旧浏览器的后备方案 */
   background: color-mix(in srgb, var(--p2) 85%, transparent) !important; /* 核心魔法：自动取主题色+透明 */
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(var(--bg-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--bg-blur)) saturate(120%);
   border-bottom: 1px solid var(--bd) !important; /* 边框线也自动跟随当前主题 */
 }
 
