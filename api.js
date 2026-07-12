@@ -1045,12 +1045,12 @@ async function emptyTrash() {
 // 设置项面板与基础弹窗 (Settings, Context Menu, Lightbox)
 // ============================================================
 function openSettings() {
-  document.getElementById('newGroupInput').value = '';
-  document.getElementById('newSectionInput').value = '';
-  document.getElementById('newSubTagInput').value = '';
+  const ngi = document.getElementById('newGroupInput'); if(ngi) ngi.value = '';
+  const nsi = document.getElementById('newSectionInput'); if(nsi) nsi.value = '';
+  const nsti = document.getElementById('newSubTagInput'); if(nsti) nsti.value = '';
   renderSetLists();
   const lmToggle = document.getElementById('lowMemToggle');
-if(lmToggle) lmToggle.checked = !!S.lowMemoryMode;
+  if(lmToggle) lmToggle.checked = !!S.lowMemoryMode;
   openModal('settingsModal');
 }
 function renderSetLists() {
