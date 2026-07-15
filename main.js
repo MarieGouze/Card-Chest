@@ -2653,7 +2653,7 @@ window._mountEditFab = function() {
       </div>
        <div class="efab-sec">
     <div class="efab-lb">✏️ 快捷插入</div>
-    <div class="efab-row"><input id="efabIns" class="efab-in" placeholder="如 {{char}}"><button class="efab-btn" onclick="_fabInsertText()">插入光标处</button></div>
+    <div class="efab-row"><input id="efabIns" class="efab-in" placeholder="如 ${'{'+'{char}}'}"><button class="efab-btn" onclick="_fabInsertText()">插入光标处</button></div>
     <div class="efab-quick" id="efabInsQuick"></div>
   </div>
   <!-- 新增：全选与撤回按钮组 -->
@@ -2720,7 +2720,7 @@ function _initFabDrag(fab) {
   fab.addEventListener('mousedown',onDown); window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
 }
 
-function _fabGetQuick(kind){ try{const v=JSON.parse(localStorage.getItem('efab_'+kind)||'null');if(Array.isArray(v))return v;}catch(e){} return kind==='ins'?['{{char}}','{{user}}']:['*','\\n\\n']; }
+function _fabGetQuick(kind){ try{const v=JSON.parse(localStorage.getItem('efab_'+kind)||'null');if(Array.isArray(v))return v;}catch(e){} return kind==='ins'?['{'+'{char}}','{'+'{user}}']:['*','\\n\\n']; }
 function _fabSetQuick(kind,arr){try{localStorage.setItem('efab_'+kind,JSON.stringify(arr));}catch(e){}}
 function _renderFabQuick(){
   const mk=(kind,cb)=>_fabGetQuick(kind).map((t,i)=>`<span class="efab-chip" onclick="${cb}('${String(t).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${esc(t)}<span class="efab-chip-x" onclick="event.stopPropagation();_fabDelQuick('${kind}',${i})">×</span></span>`).join('')+`<span class="efab-chip add" onclick="_fabAddQuick('${kind}')">+</span>`;
