@@ -3368,8 +3368,7 @@ async function _fieldEditSave() {
   _fieldEditCtx = null;
   openDetail(card.id); // 刷新详情页
 }
-</script>
-<script>
+
 
 // ============================================================
 // 新增：标签颜色分类逻辑
